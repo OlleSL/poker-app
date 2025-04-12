@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
 import "../css/PokerTable.css";
 import avatar from "../assets/avatar.png";
+import { Link } from "react-router-dom";
+
 
 const suitSymbols = {
   h: "♥",
   d: "♦",
   s: "♠",
   c: "♣",
-};
+}; 
 
 const initialPlayers = [
   { id: 1, name: "Player 1", stack: 42, cards: ["??", "??"], seat: 0, position: "UTG" },
@@ -83,7 +85,7 @@ export default function PokerTable() {
     <div className="table-container">
       <div className="table-heading">
         <h1 className="title">Hand Replayer</h1>
-        <a href="#" className="gto-link">Click here for GTO breakdown</a>
+        <Link to="/gto" className="gto-link">Click here for GTO breakdown</Link>
         <div className="underline"></div>
       </div>
 
