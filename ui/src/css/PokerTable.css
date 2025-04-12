@@ -1,0 +1,330 @@
+.table-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background-color: #123;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.table-outer-ring {
+  width: 840px;
+  height: 520px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, #004d00 40%, #002200 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.7);
+}
+
+.table {
+  width: 800px;
+  height: 480px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, #006400 0%, #013220 100%);
+  position: relative;
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.6);
+}
+
+.seat {
+  position: absolute;
+  width: 120px;
+  transform: translate(-50%, -50%);
+}
+
+.seat-0 { top: 0%;   left: 50%; }
+.seat-1 { top: 10%;  left: 85%; }
+.seat-2 { top: 50%;  left: 100%; }
+.seat-3 { top: 85%;  left: 85%; }
+.seat-4 { top: 100%; left: 50%; }
+.seat-5 { top: 85%;  left: 15%; }
+.seat-6 { top: 50%;  left: 0%; }
+.seat-7 { top: 10%;  left: 15%; }
+
+.player {
+  background-color: #224;
+  border: 2px solid #aaa;
+  border-radius: 10px;
+  padding: 8px;
+  color: white;
+  text-align: center;
+}
+
+.cards {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
+.player-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid white;
+}
+
+.name-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.name {
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
+}
+
+.stack {
+  font-size: 14px;
+}
+
+.position-tag {
+  font-size: 12px;
+  color: lightgray;
+  margin-top: 2px;
+}
+
+.card {
+  width: 32px;
+  height: 42px;
+  border: 1px solid #fff;
+  border-radius: 4px;
+  background: white;
+  color: black;
+  font-weight: bold;
+  font-size: 16px;
+  text-align: center;
+  line-height: 42px;
+}
+
+.card.back {
+  background: repeating-linear-gradient(
+    45deg,
+    #ccc,
+    #ccc 5px,
+    #aaa 5px,
+    #aaa 10px
+  );
+  color: transparent;
+}
+
+.community {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 10px;
+}
+
+.pot {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: bold;
+  font-size: 16px;
+  color: gold;
+}
+
+.controls-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 80px;
+}
+
+.stage-selector {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.stage-button {
+  background-color: #444;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.stage-button.active-stage {
+  background-color: #00cc44;
+}
+
+.step-controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.step-button {
+  background-color: #444;
+  border: none;
+  padding: 10px 16px;
+  font-size: 40px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.step-button:hover {
+  background: green;
+}
+
+.title {
+  position: absolute;
+  top: 20px;
+  left: 30px;
+  font-size: 40px;
+  color: white;
+  font-weight: 600;
+  text-shadow: 2px 2px #000;
+  z-index: 1000;
+}
+
+.heading-cards {
+  position: absolute;
+  top: 20px;
+  left: 190px;
+  display: flex;
+  gap: 6px;
+  z-index: 1000;
+}
+
+.underline {
+  position: absolute;
+  top: 88px;
+  left: 30px;
+  width: 265px;
+  height: 4px;
+  background: #00cc44;
+  border-radius: 2px;
+  z-index: 999;
+}
+
+.gto-link {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  font-size: 16px;
+  color: #00cc44;
+  text-decoration: underline;
+  cursor: pointer;
+  z-index: 1000;
+}
+
+.gto-link:hover {
+  color: #00ff66;
+}
+
+.current-action {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+}
+
+.action-label {
+  font-size: 14px;
+  color: gold;
+  margin-top: 4px;
+  display: block;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+
+
+@media screen and (max-width: 1000px) {
+  .table-outer-ring {
+    width: 75vw;
+    height: 65vh;
+    padding: 10px;
+  }
+
+  .table {
+    width: 100%;
+    height: 100%;
+  }
+
+  .seat {
+    width: 100px;
+  }
+
+  .player {
+    padding: 6px;
+    font-size: 12px;
+  }
+
+  .cards {
+    gap: 4px;
+  }
+
+  .card {
+    width: 24px;
+    height: 34px;
+    font-size: 14px;
+    line-height: 34px;
+  }
+
+  .avatar {
+    width: 30px;
+    height: 30px;
+  }
+
+  .name {
+    font-size: 12px;
+  }
+
+  .stack {
+    font-size: 12px;
+  }
+
+  .position-tag {
+    font-size: 10px;
+  }
+
+  .title {
+    font-size: 28px;
+  }
+
+  .step-button {
+    font-size: 30px;
+    padding: 6px 12px;
+  }
+
+  .stage-button {
+    font-size: 18px;
+    padding: 6px 10px;
+  }
+
+  .gto-link {
+    font-size: 14px;
+    top: 16px;
+    right: 16px;
+  }
+
+  .underline {
+    display: none;
+  }
+  
+}
