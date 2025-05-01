@@ -236,6 +236,13 @@
   color: #00ff66;
 }
 
+.poker-wrapper {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+
 @media screen and (max-width: 1000px) {
   .table-outer-ring {
     width: 75vw;

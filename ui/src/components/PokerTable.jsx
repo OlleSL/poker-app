@@ -81,7 +81,8 @@ export default function PokerTable() {
     return allCommunityCards;
   }
 
-  return (
+return (
+  <div className="poker-wrapper">
     <div className="table-container">
       <div className="table-heading">
         <h1 className="title">Hand Replayer</h1>
@@ -148,5 +149,7 @@ export default function PokerTable() {
         </div>
       </div>
     </div>
-  );
+  </div>
+);
+
 }
