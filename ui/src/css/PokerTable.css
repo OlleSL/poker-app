@@ -1,11 +1,22 @@
+body {
+  font-family: system-ui, -apple-system, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+.poker-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #123;
+  align-items: center;
+  justify-content: center;
+}
+
 .table-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  height: 100vh;
-  background-color: #123;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .table-outer-ring {
@@ -51,6 +62,7 @@
   padding: 8px;
   color: white;
   text-align: center;
+  margin: -18px;
 }
 
 .cards {
@@ -58,6 +70,49 @@
   gap: 6px;
   justify-content: center;
   margin-bottom: 6px;
+}
+
+.card {
+  width: 40px;
+  height: 50px;
+  border: 1px solid #fff;
+  border-radius: 4px;
+  background: white;
+  color: black;
+  font-weight: bold;
+  font-size: 25px;
+  text-align: center;
+  line-height: 42px;
+}
+
+.card.back {
+  background: repeating-linear-gradient(
+    45deg,
+    #ccc,
+    #ccc 5px,
+    #aaa 5px,
+    #aaa 10px
+  );
+  color: transparent;
+}
+
+.community {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 10px;
+}
+
+.pot {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: bold;
+  font-size: 16px;
+  color: gold;
 }
 
 .player-info {
@@ -98,222 +153,144 @@
   margin-top: 2px;
 }
 
-.card {
-  width: 32px;
-  height: 42px;
-  border: 1px solid #fff;
-  border-radius: 4px;
-  background: white;
-  color: black;
-  font-weight: bold;
-  font-size: 16px;
-  text-align: center;
-  line-height: 42px;
-}
-
-.card.back {
-  background: repeating-linear-gradient(
-    45deg,
-    #ccc,
-    #ccc 5px,
-    #aaa 5px,
-    #aaa 10px
-  );
-  color: transparent;
-}
-
-.community {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  gap: 10px;
-}
-
-.pot {
-  position: absolute;
-  top: 40%;
-  left: 50%;
-  transform: translateX(-50%);
-  font-weight: bold;
-  font-size: 16px;
-  color: gold;
-}
-
-.controls-wrapper {
+.table-heading {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 80px;
-}
-
-.stage-selector {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 20px;
 }
 
-.stage-button {
-  background-color: #444;
-  color: white;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 6px;
-  font-size: 24px;
-  cursor: pointer;
-}
-
-.stage-button.active-stage {
-  background-color: #00cc44;
-}
-
-.step-controls {
-  display: flex;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.step-button {
-  background-color: #444;
-  border: none;
-  padding: 10px 16px;
-  font-size: 40px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.step-button:hover {
-  background: green;
-}
-
 .title {
-  position: absolute;
-  top: 20px;
-  left: 30px;
-  font-size: 40px;
-  color: white;
+  font-size: 36px;
   font-weight: 600;
+  color: white;
   text-shadow: 2px 2px #000;
-  z-index: 1000;
-}
-
-.heading-cards {
-  position: absolute;
-  top: 20px;
-  left: 190px;
-  display: flex;
-  gap: 6px;
-  z-index: 1000;
-}
-
-.underline {
-  position: absolute;
-  top: 88px;
-  left: 30px;
-  width: 265px;
-  height: 4px;
-  background: #00cc44;
-  border-radius: 2px;
-  z-index: 999;
 }
 
 .gto-link {
-  position: absolute;
-  top: 20px;
-  right: 30px;
-  font-size: 16px;
   color: #00cc44;
+  font-size: 16px;
   text-decoration: underline;
   cursor: pointer;
-  z-index: 1000;
 }
 
 .gto-link:hover {
   color: #00ff66;
 }
 
-.poker-wrapper {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
+.underline {
+  height: 4px;
+  width: 240px;
+  background: #00cc44;
+  border-radius: 2px;
 }
 
+input[type="file"],
+textarea {
+  font-size: 16px;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  width: 90%;
+  max-width: 700px;
+}
+
+.controls-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 40px;
+}
+
+.stage-controls,
+.hand-controls {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.step-button {
+  background-color: #444;
+  color: white;
+  font-size: 30px;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+  transition: background 0.2s ease;
+}
+
+.step-button:hover {
+  background-color: green;
+}
+
+.hand-counter {
+  font-size: 18px;
+  color: white;
+  display: flex;
+  align-items: center;
+}
+
+.chip-animation {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.5rem;
+  animation: floatUp 1s ease-out;
+  z-index: 10;
+}
+
+@keyframes floatUp {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -80%) scale(1.5);
+  }
+}
+
+.acting-player .player {
+  border: 2px solid yellow;
+  box-shadow: 0 0 10px yellow;
+}
 
 @media screen and (max-width: 1000px) {
   .table-outer-ring {
-    width: 75vw;
-    height: 65vh;
+    width: 90vw;
+    height: auto;
+    aspect-ratio: 16 / 9;
     padding: 10px;
   }
 
-  .table {
-    width: 100%;
-    height: 100%;
-  }
-
-  .seat {
-    width: 100px;
-  }
-
-  .player {
-    padding: 6px;
-    font-size: 12px;
-  }
-
-  .cards {
-    gap: 4px;
-  }
-
   .card {
-    width: 24px;
-    height: 34px;
+    width: 26px;
+    height: 36px;
     font-size: 14px;
-    line-height: 34px;
-  }
-
-  .avatar {
-    width: 30px;
-    height: 30px;
-  }
-
-  .name {
-    font-size: 12px;
-  }
-
-  .stack {
-    font-size: 12px;
-  }
-
-  .position-tag {
-    font-size: 10px;
-  }
-
-  .title {
-    font-size: 28px;
+    line-height: 36px;
   }
 
   .step-button {
-    font-size: 30px;
-    padding: 6px 12px;
+    font-size: 24px;
+    padding: 8px 10px;
   }
 
-  .stage-button {
-    font-size: 18px;
-    padding: 6px 10px;
+  .title {
+    font-size: 24px;
   }
 
   .gto-link {
     font-size: 14px;
-    top: 16px;
-    right: 16px;
   }
+}
 
-  .underline {
-    display: none;
-  }
-  
+.folded .player {
+  opacity: 0.4;
+  filter: grayscale(80%);
 }
