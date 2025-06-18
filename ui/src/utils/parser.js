@@ -31,6 +31,17 @@ function parseSingleHand(rawText) {
     totalPot: null,
   };
 
+  const headerLine = lines.find(
+    (line) => line.includes("Hold'em") && line.includes("(")
+  );
+
+  if (headerLine) {
+    const match = headerLine.match(/\((\d+)\/(\d+)\)/);
+    if (match) {
+      hand.bigBlind = parseInt(match[2], 10);
+    }
+  }
+
   let street = "preflop";
   let seatCounter = 0;
 
@@ -73,7 +84,7 @@ function parseSingleHand(rawText) {
       if (match) hand.board.push(match[1]);
     }
 
-    if (/^\w+:\s(bets|raises|calls|checks|folds)/.test(line)) {
+    if (/^\w+:\s(bets|raises|calls|checks|folds|posts)/.test(line)) {
       const match = line.match(/^(\w+):\s(\w+)(.*)/);
       if (match) {
         let [, player, action, detail] = match;
@@ -84,6 +95,20 @@ function parseSingleHand(rawText) {
           player,
           action,
           amount: amount ? parseInt(amount) : null,
+          raw: line,
+        });
+      }
+    }
+
+    // Handle "posts the ante" as a separate case
+    if (line.includes("posts the ante")) {
+      const match = line.match(/^(\w+): posts the ante (\d+)/);
+      if (match) {
+        const [, player, amount] = match;
+        hand.actions[street].push({
+          player,
+          action: "posts",
+          amount: parseInt(amount),
           raw: line,
         });
       }

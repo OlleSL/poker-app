@@ -43,53 +43,120 @@ export default function PokerTable() {
   function handleNext() {
     if (!parsedHand) return;
 
-    const stageActions = parsedHand.actions[currentStage] || [];
+    const actions = parsedHand.actions[currentStage] || [];
 
-    if (currentActionIndex < stageActions.length - 1) {
-      setCurrentActionIndex((prev) => prev + 1);
-    } else {
-      const currentIndex = stages.indexOf(currentStage);
-      if (currentIndex < stages.length - 1) {
-        setCurrentStage(stages[currentIndex + 1]);
-        setCurrentActionIndex(0);
+    // 🧭 Initial step from neutral state
+    if (currentActionIndex === -1) {
+      const first = getFirstActionIndex(currentStage);
+      setCurrentActionIndex(first);
+      return;
+    }
+
+    let newIndex = currentActionIndex + 1;
+
+    // ⏩ Skip "posts"
+    while (newIndex < actions.length && actions[newIndex].action === "posts") {
+      newIndex++;
+    }
+
+    // ✅ Still more actions in this stage
+    if (newIndex < actions.length) {
+      setCurrentActionIndex(newIndex);
+      return;
+    }
+
+    // 🌊 Try to move to next stage
+    const currentIndex = stages.indexOf(currentStage);
+    for (let i = currentIndex + 1; i < stages.length; i++) {
+      const nextStage = stages[i];
+      const nextActions = parsedHand.actions[nextStage] || [];
+      const nextIndex = getFirstActionIndex(nextStage);
+
+      if (nextIndex < nextActions.length) {
+        setCurrentStage(nextStage);
+        setCurrentActionIndex(nextIndex);
+        return;
       }
     }
+
+    // 🛑 No more actions → freeze at last state
+    return;
+  }
+
+
+  function getFirstActionIndex(stage) {
+    const actions = parsedHand?.actions[stage] || [];
+    for (let i = 0; i < actions.length; i++) {
+      if (actions[i].action !== "posts") return i;
+    }
+    return 0;
   }
 
   function handlePrev() {
     if (!parsedHand) return;
 
-    if (currentActionIndex > 0) {
-      setCurrentActionIndex((prev) => prev - 1);
+    const actions = parsedHand.actions[currentStage] || [];
+
+    // 🌟 Handle transition to neutral state if we're at first action
+    if (currentActionIndex === getFirstActionIndex(currentStage)) {
+      setCurrentActionIndex(-1);
+      return;
+    }
+
+    let newIndex = currentActionIndex - 1;
+
+    // ⏪ Skip "posts"
+    while (newIndex >= 0 && actions[newIndex].action === "posts") {
+      newIndex--;
+    }
+
+    if (newIndex >= 0) {
+      setCurrentActionIndex(newIndex);
     } else {
+      // 🌀 Go to previous stage if possible
       const currentIndex = stages.indexOf(currentStage);
-      if (currentIndex > 0) {
-        const prevStage = stages[currentIndex - 1];
-        const prevStageActions = parsedHand.actions[prevStage] || [];
-        setCurrentStage(prevStage);
-        setCurrentActionIndex(prevStageActions.length - 1);
+      for (let i = currentIndex - 1; i >= 0; i--) {
+        const prevStage = stages[i];
+        const prevActions = parsedHand.actions[prevStage] || [];
+        const lastValid = prevActions.map(a => a.action).lastIndexOf("posts") + 1;
+
+        const lastAction = prevActions.slice(0, lastValid).findLastIndex(a => a.action !== "posts");
+
+        if (lastAction >= 0) {
+          setCurrentStage(prevStage);
+          setCurrentActionIndex(lastAction);
+          return;
+        }
       }
+
+      // 🧼 If fully rewound, go neutral
+      setCurrentActionIndex(-1);
+      setCurrentStage("preflop");
     }
   }
 
+
+
   function hasPlayerFolded(playerName) {
+    if (currentActionIndex === -1) return false;
+
     if (!parsedHand) return false;
 
+    const currentStageIndex = stages.indexOf(currentStage);
     let folded = false;
 
-
-    for (let i = 0; i < stages.length; i++) {
+    for (let i = 0; i <= currentStageIndex; i++) {
       const stage = stages[i];
       const actions = parsedHand.actions[stage] || [];
 
       for (let j = 0; j < actions.length; j++) {
-        // Stop at current stage and current action index
-        if (i === stages.indexOf(currentStage) && j >= currentActionIndex) {
+        // Stop early if we've reached beyond the current action in the current stage
+        if (i === currentStageIndex && j > currentActionIndex) {
           return folded;
         }
 
-        const act = actions[j];
-        if (act.player === playerName && act.action === "folds") {
+        const action = actions[j];
+        if (action.player === playerName && action.action === "folds") {
           folded = true;
         }
       }
@@ -98,14 +165,13 @@ export default function PokerTable() {
     return folded;
   }
 
-
   function togglePlay() {
     setIsPlaying((prev) => !prev);
   }
 
   function jumpToStage(stage) {
     setCurrentStage(stage);
-    setCurrentActionIndex(0);
+    setCurrentActionIndex(-1);
     setIsPlaying(false);
   }
 
@@ -128,6 +194,52 @@ export default function PokerTable() {
     return board;
   }
 
+  function calculateCurrentPot() {
+    if (!parsedHand) return 0;
+
+    let pot = 0;
+
+    // ✅ Add antes from all players
+    const anteLines = Object.values(parsedHand.players).filter((player) =>
+      parsedHand.actions.preflop.some((a) => a.player === player.name && a.action === "posts" && a.amount && a.amount <= parsedHand.bigBlind / 2)
+    );
+
+    if (anteLines.length > 0) {
+      // All players posting ante: get amount from one of them
+      const anteAmount = parsedHand.actions.preflop.find(
+        (a) => a.action === "posts" && a.amount && a.amount <= parsedHand.bigBlind / 2
+      )?.amount || 0;
+
+      pot += anteAmount * anteLines.length;
+    }
+
+    // ✅ Add small blind and big blind
+    const sb = parsedHand.actions.preflop.find((a) => a.action === "posts" && a.amount === parsedHand.bigBlind / 2);
+    const bb = parsedHand.actions.preflop.find((a) => a.action === "posts" && a.amount === parsedHand.bigBlind);
+
+    if (sb) pot += sb.amount;
+    if (bb) pot += bb.amount;
+
+    // ✅ Add actual betting/calling/raising after blinds+antes
+    for (let i = 0; i < stages.length; i++) {
+      const stage = stages[i];
+      const actions = parsedHand.actions[stage] || [];
+
+      for (let j = 0; j < actions.length; j++) {
+        if (i === stages.indexOf(currentStage) && j > currentActionIndex) return pot;
+
+        const action = actions[j];
+        if (["bets", "calls", "raises"].includes(action.action)) {
+          pot += parseFloat(action.amount || 0);
+        }
+      }
+    }
+
+    return pot;
+  }
+
+
+
   return (
     <div className="poker-wrapper">
       <div className="table-container">
@@ -147,7 +259,7 @@ export default function PokerTable() {
                 setHands(parsedHands);
                 setCurrentHandIndex(0);
                 setCurrentStage("preflop");
-                setCurrentActionIndex(0);
+                setCurrentActionIndex(-1);
                 setIsPlaying(false);
               };
               reader.readAsText(file);
@@ -164,7 +276,7 @@ export default function PokerTable() {
               setHands(parsedHands);
               setCurrentHandIndex(0);
               setCurrentStage("preflop");
-              setCurrentActionIndex(0);
+              setCurrentActionIndex(-1);
               setIsPlaying(false);
             }}
             style={{ marginTop: "1rem", padding: "0.5rem", fontFamily: "monospace", width: "100%" }}
@@ -206,7 +318,9 @@ export default function PokerTable() {
                       <img src={avatar} alt="avatar" className="avatar" />
                       <div className="name-stack">
                         <div className="name">{player.name}</div>
-                        <div className="stack">{player.stack} BB</div>
+                        <div className="stack">
+                          {parsedHand?.bigBlind ? (player.stack / parsedHand.bigBlind).toFixed(2) : player.stack} BB
+                        </div>
                         <div className="position-tag">{player.position}</div>
                       </div>
                     </div>
@@ -237,8 +351,13 @@ export default function PokerTable() {
               <div className="current-action" style={{ textAlign: "center", marginBottom: "1rem" }}>
                 {(() => {
                   const stageActions = parsedHand.actions[currentStage];
-                  if (!stageActions || stageActions.length === 0) return null;
+                  if (currentActionIndex === -1 || !stageActions || stageActions.length === 0) return null;
                   const current = stageActions[currentActionIndex] || {};
+
+                  // Skip ante posts from display
+                  const isAntePost = current.action === "posts" && current.amount <= parsedHand.bigBlind / 2;
+                  if (isAntePost) return null;
+
                   return (
                     <p>
                       <strong>{current?.player}</strong>: {current?.action}
@@ -250,7 +369,10 @@ export default function PokerTable() {
             )}
 
             <div className="pot">
-              Pot: {parsedHand?.totalPot ? `${parsedHand.totalPot} chips` : "24 BB"}
+              Pot:{" "}
+              {parsedHand?.bigBlind
+                ? (calculateCurrentPot() / parsedHand.bigBlind).toFixed(2) + " BB"
+                : calculateCurrentPot() + " chips"}
             </div>
           </div>
         </div>
@@ -272,7 +394,7 @@ export default function PokerTable() {
                 if (currentHandIndex > 0) {
                   setCurrentHandIndex(currentHandIndex - 1);
                   setCurrentStage("preflop");
-                  setCurrentActionIndex(0);
+                  setCurrentActionIndex(-1);
                   setIsPlaying(false);
                 }
               }}
@@ -288,7 +410,7 @@ export default function PokerTable() {
                 if (currentHandIndex < hands.length - 1) {
                   setCurrentHandIndex(currentHandIndex + 1);
                   setCurrentStage("preflop");
-                  setCurrentActionIndex(0);
+                  setCurrentActionIndex(-1);
                   setIsPlaying(false);
                 }
               }}
