@@ -40,48 +40,74 @@ export default function PokerTable() {
 
   const dynamicPlayers = Object.values(parsedHand?.players || {});
 
-  function handleNext() {
-    if (!parsedHand) return;
+  function getNextActingPlayerName() {
+    if (!parsedHand) return null;
 
-    const actions = parsedHand.actions[currentStage] || [];
+    const currentStageIndex = stages.indexOf(currentStage);
 
-    // 🧭 Initial step from neutral state
-    if (currentActionIndex === -1) {
-      const first = getFirstActionIndex(currentStage);
-      setCurrentActionIndex(first);
-      return;
-    }
+    for (let i = currentStageIndex; i < stages.length; i++) {
+      const stage = stages[i];
+      const actions = parsedHand.actions[stage] || [];
 
-    let newIndex = currentActionIndex + 1;
+      // 👇 Use -1-aware starting index
+      let startIndex =
+        i === currentStageIndex ? (currentActionIndex === -1 ? 0 : currentActionIndex + 1) : 0;
 
-    // ⏩ Skip "posts"
-    while (newIndex < actions.length && actions[newIndex].action === "posts") {
-      newIndex++;
-    }
-
-    // ✅ Still more actions in this stage
-    if (newIndex < actions.length) {
-      setCurrentActionIndex(newIndex);
-      return;
-    }
-
-    // 🌊 Try to move to next stage
-    const currentIndex = stages.indexOf(currentStage);
-    for (let i = currentIndex + 1; i < stages.length; i++) {
-      const nextStage = stages[i];
-      const nextActions = parsedHand.actions[nextStage] || [];
-      const nextIndex = getFirstActionIndex(nextStage);
-
-      if (nextIndex < nextActions.length) {
-        setCurrentStage(nextStage);
-        setCurrentActionIndex(nextIndex);
-        return;
+      for (let j = startIndex; j < actions.length; j++) {
+        const action = actions[j];
+        if (!["posts"].includes(action.action)) {
+          return action.player;
+        }
       }
     }
 
-    // 🛑 No more actions → freeze at last state
+    return null;
+  }
+
+function handleNext() {
+  if (!parsedHand) return;
+
+  const actions = parsedHand.actions[currentStage] || [];
+
+  // 🧭 Initial step from neutral state
+  if (currentActionIndex === -1) {
+    const first = getFirstActionIndex(currentStage);
+    setCurrentActionIndex(first);
     return;
   }
+
+  let newIndex = currentActionIndex + 1;
+
+  // ⏩ Skip "posts"
+  while (newIndex < actions.length && actions[newIndex].action === "posts") {
+    newIndex++;
+  }
+
+  // ✅ Still more actions in this stage
+  if (newIndex < actions.length) {
+    setCurrentActionIndex(newIndex);
+    return;
+  }
+
+  // 🌊 Move to next stage (even if next stage has no actions)
+  const currentIndex = stages.indexOf(currentStage);
+  if (currentIndex < stages.length - 1) {
+    const nextStage = stages[currentIndex + 1];
+    const nextStageActions = parsedHand.actions[nextStage] || [];
+
+    setCurrentStage(nextStage);
+
+    const firstIndex = getFirstActionIndex(nextStage);
+    // If no valid first action, stay neutral
+    setCurrentActionIndex(
+      firstIndex < nextStageActions.length ? firstIndex : -1
+    );
+
+    return;
+  }
+}
+
+
 
 
   function getFirstActionIndex(stage) {
@@ -138,8 +164,6 @@ export default function PokerTable() {
 
 
   function hasPlayerFolded(playerName) {
-    if (currentActionIndex === -1) return false;
-
     if (!parsedHand) return false;
 
     const currentStageIndex = stages.indexOf(currentStage);
@@ -291,19 +315,16 @@ export default function PokerTable() {
             {dynamicPlayers.map((player) => {
               const currentAction = parsedHand?.actions[currentStage]?.[currentActionIndex];
               const isActing = currentAction?.player === player.name;
-
+              const isNextToAct = player.name === getNextActingPlayerName();
               return (
                 <div
                   key={player.id}
-                  className={`seat seat-${Math.floor(player.seat)} ${
-                    player.id === currentPlayerId ? "active-player" : ""
-                  } ${
-                    parsedHand?.actions[currentStage]?.[currentActionIndex]?.player === player.name
-                      ? "acting-player"
-                      : ""
-                  } ${hasPlayerFolded(player.name) ? "folded" : ""}`}
+                  className={`seat seat-${Math.floor(player.seat)} 
+                    ${player.id === currentPlayerId ? "active-player" : ""} 
+                    ${isNextToAct ? "next-acting-player" : ""} 
+                    ${hasPlayerFolded(player.name) ? "folded" : ""}`}
                 >
-                  <div className="player">
+                  <div className={`player ${isNextToAct ? "next-acting-player" : ""}`}>
                     <div className="cards">
                       {player.cards.length > 0
                         ? player.cards.map((card, i) => (

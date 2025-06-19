@@ -256,11 +256,33 @@ textarea {
   }
 }
 
+/* Highlight for current acting player */
 .acting-player .player {
   border: 2px solid yellow;
   box-shadow: 0 0 10px yellow;
 }
 
+/* Dim folded players */
+.folded .player {
+  opacity: 0.4;
+  filter: grayscale(80%);
+}
+
+/* Highlight the next-to-act player */
+.seat.next-acting-player .player {
+  border: 3px solid gold;
+  border-radius: 10px;
+  box-shadow: 0 0 12px gold;
+}
+
+.player.next-acting-player {
+  border: 3px solid gold;
+  border-radius: 10px;
+  box-shadow: 0 0 12px gold;
+}
+
+
+/* Responsive tweaks */
 @media screen and (max-width: 1000px) {
   .table-outer-ring {
     width: 90vw;
@@ -288,9 +310,4 @@ textarea {
   .gto-link {
     font-size: 14px;
   }
-}
-
-.folded .player {
-  opacity: 0.4;
-  filter: grayscale(80%);
 }
