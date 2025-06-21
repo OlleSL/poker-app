@@ -64,50 +64,51 @@ export default function PokerTable() {
     return null;
   }
 
-function handleNext() {
-  if (!parsedHand) return;
+  function handleNext() {
+    if (!parsedHand) return;
 
-  const actions = parsedHand.actions[currentStage] || [];
+    const actions = parsedHand.actions[currentStage] || [];
 
-  // 🧭 Initial step from neutral state
-  if (currentActionIndex === -1) {
-    const first = getFirstActionIndex(currentStage);
-    setCurrentActionIndex(first);
-    return;
+    // 🧭 Initial step from neutral state
+    if (currentActionIndex === -1) {
+      const first = getFirstActionIndex(currentStage);
+      setCurrentActionIndex(first);
+      return;
+    }
+
+    let newIndex = currentActionIndex + 1;
+
+    // ⏩ Skip "posts"
+    while (newIndex < actions.length && actions[newIndex].action === "posts") {
+      newIndex++;
+    }
+
+    // ✅ Still more actions in this stage
+    if (newIndex < actions.length) {
+      setCurrentActionIndex(newIndex);
+      return;
+    }
+
+    // 🌊 Move to next stage (even if next stage has no actions)
+    const currentIndex = stages.indexOf(currentStage);
+    if (currentIndex < stages.length - 1) {
+      const nextStage = stages[currentIndex + 1];
+      const nextStageActions = parsedHand.actions[nextStage] || [];
+
+      const firstIndex = getFirstActionIndex(nextStage);
+
+      setCurrentStage(nextStage);
+
+      // 🟡 Auto-step to first valid action, if there is one
+      if (firstIndex < nextStageActions.length) {
+        setCurrentActionIndex(firstIndex);
+      } else {
+        setCurrentActionIndex(-1);
+      }
+
+      return;
+    }
   }
-
-  let newIndex = currentActionIndex + 1;
-
-  // ⏩ Skip "posts"
-  while (newIndex < actions.length && actions[newIndex].action === "posts") {
-    newIndex++;
-  }
-
-  // ✅ Still more actions in this stage
-  if (newIndex < actions.length) {
-    setCurrentActionIndex(newIndex);
-    return;
-  }
-
-  // 🌊 Move to next stage (even if next stage has no actions)
-  const currentIndex = stages.indexOf(currentStage);
-  if (currentIndex < stages.length - 1) {
-    const nextStage = stages[currentIndex + 1];
-    const nextStageActions = parsedHand.actions[nextStage] || [];
-
-    setCurrentStage(nextStage);
-
-    const firstIndex = getFirstActionIndex(nextStage);
-    // If no valid first action, stay neutral
-    setCurrentActionIndex(
-      firstIndex < nextStageActions.length ? firstIndex : -1
-    );
-
-    return;
-  }
-}
-
-
 
 
   function getFirstActionIndex(stage) {
@@ -207,15 +208,39 @@ function handleNext() {
     return () => clearInterval(interval);
   }, [isPlaying, currentStage]);
 
+
+  function isPreflopDone() {
+    if (currentStage !== "preflop" || !parsedHand) return false;
+
+    const acts = parsedHand.actions.preflop ?? [];
+
+    // index of the last   non-“posts”   action
+    const lastRealIdx = [...acts]
+      .reverse()
+      .findIndex(a => a.action !== "posts");
+
+    // if there were no “real” actions (rare), nothing to show
+    if (lastRealIdx === -1) return false;
+
+    const absoluteLast = acts.length - 1 - lastRealIdx;
+
+    return currentActionIndex >= absoluteLast;  // we’ve reached the end
+  }
+
+
   function getVisibleCards() {
     if (!parsedHand) return [];
 
     const board = parsedHand.board;
 
+    /* 👁️  show flop immediately once pre-flop is DONE */
+    if (isPreflopDone()) return board.slice(0, 3);
+
     if (currentStage === "preflop") return [];
-    if (currentStage === "flop") return board.slice(0, 3);
-    if (currentStage === "turn") return board.slice(0, 4);
-    return board;
+    if (currentStage === "flop")    return board.slice(0, 3);
+    if (currentStage === "turn")    return board.slice(0, 4);
+
+    return board;          // river / showdown
   }
 
   function calculateCurrentPot() {
@@ -381,8 +406,11 @@ function handleNext() {
 
                   return (
                     <p>
-                      <strong>{current?.player}</strong>: {current?.action}
-                      {current?.amount ? ` ${current.amount} chips` : ""}
+                      <strong>{current?.player}</strong>:{" "}
+                      {current?.action === "raises"
+                        ? `raises to ${(current.amount / parsedHand.bigBlind).toFixed(2)} BB`
+                        : `${current?.action}${current?.amount ? ` ${(current.amount / parsedHand.bigBlind).toFixed(2)} BB` : ""}`
+                      }
                     </p>
                   );
                 })()}
