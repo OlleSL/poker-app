@@ -1,18 +1,16 @@
 export function parseRedDragonHands(rawText) {
-  const handBlocks = rawText
-    .split(/\n(?=Hand #)/)
-    .map((block) => block.trim())
+  // 1. line-ending normalisation (also removes a trailing BOM if present)
+  const text = rawText.replace(/\r\n/g, '\n').replace(/^\uFEFF/, '').trim();
+
+  // 2. split every time a new line starts with something … Hand #<digits>
+  const handBlocks = text
+    .split(/(?:^|\n)(?=[^\n]*\bHand #\d+)/g)   // <── new pattern
+    .map(b => b.trim())
     .filter(Boolean);
 
-  const hands = [];
-
-  for (const block of handBlocks) {
-    const hand = parseSingleHand(block);
-    if (hand) hands.push(hand);
-  }
-
-  return hands;
+  return handBlocks.map(parseSingleHand).reverse();      // no length-check needed
 }
+
 
 function parseSingleHand(rawText) {
   const lines = rawText.split("\n").map((line) => line.trim());
@@ -29,6 +27,7 @@ function parseSingleHand(rawText) {
     },
     winner: null,
     totalPot: null,
+    anteTotal: 0
   };
 
   const headerLine = lines.find(
@@ -89,12 +88,25 @@ function parseSingleHand(rawText) {
       if (match) {
         let [, player, action, detail] = match;
         detail = detail.trim();
-        const amount = detail.match(/(\d+)/)?.[1] || null;
+
+        let amount = null;
+
+        if (action === "raises") {
+          const raiseMatch = detail.match(/to (\d+)/); // ✅ get the total
+          if (raiseMatch) {
+            amount = parseInt(raiseMatch[1]);
+          }
+        } else {
+          const amountMatch = detail.match(/(\d+)/);
+          if (amountMatch) {
+            amount = parseInt(amountMatch[1]);
+          }
+        }
 
         hand.actions[street].push({
           player,
           action,
-          amount: amount ? parseInt(amount) : null,
+          amount,
           raw: line,
         });
       }
@@ -111,6 +123,9 @@ function parseSingleHand(rawText) {
           amount: parseInt(amount),
           raw: line,
         });
+
+        hand.anteTotal = (hand.anteTotal || 0) + parseInt(amount);
+
       }
     }
 
