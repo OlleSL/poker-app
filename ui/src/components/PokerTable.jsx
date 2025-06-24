@@ -72,208 +72,176 @@ export default function PokerTable() {
   /* ------------------------------------------------------------------ */
 
   /**  How much this player has put in *so far*  */
-  function contributionSoFar(hand, untilStage, untilIndex, player) {
-    if (!hand) return 0;
+  function contributionSoFar(hand, untilStage, untilIndex, player){
+    if(!hand) return 0;
+    let total   = 0;
+    const loops = ["preflop","flop","turn","river"];
+    for(const st of loops){
+      const acts          = hand.actions[st] ?? [];
+      const neutral       = st === untilStage && untilIndex === -1;
+      const moneyActs     = neutral ? ["posts"] : ["posts","bets","calls"];
+      let last            = acts.length-1;
+      if(st === untilStage && untilIndex !== -1) last = untilIndex;
 
-    let total = 0;
-    const allStages = ["preflop", "flop", "turn", "river"];
-    for (const st of allStages) {
-      const actions = hand.actions[st] ?? [];
-      /* neutral state  →  we still want to include all “posts” (antes / blinds)
-      that happened before the first real action                       */
-      let lastIdx = actions.length - 1;
-      if (st === untilStage && untilIndex !== -1) {
-        lastIdx = untilIndex;
-      }
+      for(let i=0;i<=last;i++){
+        const a = acts[i];
+        if(!a || a.player !== player) continue;
+        if(moneyActs.includes(a.action)) total += a.amount ?? 0;
 
-      for (let i = 0; i <= lastIdx; i++) {
-        const a = actions[i];
-        if (!a || a.player !== player) continue;
-
-      const moneyActions =
-        untilIndex === -1 && st === untilStage
-         ? ["posts"]
-         : ["posts", "bets", "calls"];
-
-      if (moneyActions.includes(a.action)) {
-        total += a.amount ?? 0;
-      }
-
-        if (a.action === "raises") {
-          /* ‘raises to 1200’ – we only want the *increment* beyond
-            what they had already put in on this street. The parser
-            keeps the *to* amount, so we need to know previous street
-            contribution:                                    */
-          const prev = actions
+        /* raises are “to …”  ⇒ add only increment on that street           */
+        if (!neutral && a.action === "raises") {
+          const alreadyPutIn = acts
             .slice(0, i)
-            .filter(p => p.player === player)
-            .reduce((s, p) =>
-              ["posts", "bets", "calls"].includes(p.action) ? s + (p.amount ?? 0)
-                                                            : s, 0);
-          total += (a.amount ?? 0) - prev;
+            .filter(
+              p =>
+                p.player === player &&
+                ["posts", "bets", "calls", "raises"].includes(p.action)
+            )
+            .reduce((s, p) => s + (p.amount ?? 0), 0);
+
+          total += (a.amount ?? 0) - alreadyPutIn;
         }
       }
-      if (st === untilStage) break;
+      if(st === untilStage) break;
     }
     return total;
   }
 
-  /**  Pretty chip tag (used both in seat & community “fly-up”) */
-  function ChipTag({amount, bb}) {
-    return (
-      <span className="chip-tag">
-        💰 {(amount / bb).toFixed(2)} BB
-      </span>
-    );
-  }
+  function handleNext(){
+    if(!parsedHand) return;
+    const acts = parsedHand.actions[currentStage] || [];
 
-
-  function handleNext() {
-    if (!parsedHand) return;
-
-    const actions = parsedHand.actions[currentStage] || [];
-
-    // 🧭 Initial step from neutral state
-    if (currentActionIndex === -1) {
-      const first = getFirstActionIndex(currentStage);
-      setCurrentActionIndex(first);
+    /* neutral → first real action */
+    if(currentActionIndex===-1){
+      const first=getFirstActionIndex(currentStage);
+      if(first<acts.length){
+        setVisibleBets(updateVisibleBets(currentStage,first));
+        setCurrentActionIndex(first);
+      }else{
+        setCurrentActionIndex(first); // e.g. flop-reveal click
+      }
       return;
     }
 
-    let newIndex = currentActionIndex + 1;
-
-    // ⏩ Skip "posts"
-    while (newIndex < actions.length && actions[newIndex].action === "posts") {
-      newIndex++;
-    }
-
-    // ✅ Still more actions in this stage
-    if (newIndex < actions.length) {
-      const nextAction = actions[newIndex];
-      if (["bets", "raises", "calls"].includes(nextAction.action)) {
-        setVisibleBets(prev => ({
-          ...prev,
-          [nextAction.player]: nextAction.amount,
-        }));
-      }
-      setCurrentActionIndex(newIndex);
+    /* step inside current street */
+    let idx=currentActionIndex+1;
+    while(idx<acts.length && acts[idx].action==="posts") idx++;
+    if(idx<acts.length){
+      setVisibleBets(updateVisibleBets(currentStage,idx));
+      setCurrentActionIndex(idx);
       return;
     }
 
-    // 🌊 Move to next stage
-    const currentIndex = stages.indexOf(currentStage);
-    if (currentIndex < stages.length - 1) {
-      const nextStage = stages[currentIndex + 1];
-      const nextStageActions = parsedHand.actions[nextStage] || [];
-
-      const firstIndex = getFirstActionIndex(nextStage);
-
-      setCurrentStage(nextStage);
-      setCurrentActionIndex(firstIndex < nextStageActions.length ? firstIndex : -1);
-
-      if (firstIndex === -1 && nextStage === "preflop") {
-        setVisibleBets(blindPosts());     // new hand, neutral pre-flop view
-      } else {
-        setVisibleBets(
-          firstIndex !== -1 &&
-          ["bets", "raises", "calls"].includes(nextStageActions[firstIndex]?.action)
-            ? { [nextStageActions[firstIndex].player]: nextStageActions[firstIndex].amount }
-            : {}
-        );
-      }
-
-      const newVisibleBets = { ...visibleBets };
-      const newAction = nextStageActions[firstIndex];
-
-      if (newAction && ["bets", "raises", "calls"].includes(newAction.action)) {
-        newVisibleBets[newAction.player] = newAction.amount;
-      }
-
+    /* move to next street — stop in neutral state (-1) first               */
+    const nextIdx = stages.indexOf(currentStage)+1;
+    if(nextIdx<stages.length){
+      setCurrentStage(stages[nextIdx]);
+      setCurrentActionIndex(-1);
       setVisibleBets({});
-      if (newAction && ["bets", "raises", "calls"].includes(newAction.action)) {
-        setVisibleBets({ [newAction.player]: newAction.amount });
-      }
     }
   }
 
-  function getFirstActionIndex(stage) {
-    const actions = parsedHand?.actions[stage] || [];
-    for (let i = 0; i < actions.length; i++) {
-      if (actions[i].action !== "posts") return i;
-    }
+  function getFirstActionIndex(stage){
+    const acts = parsedHand?.actions[stage] || [];
+    for(let i=0;i<acts.length;i++) if(acts[i].action!=="posts") return i;
     return 0;
   }
 
-  function handlePrev() {
-    if (!parsedHand) return;
+  function updateVisibleBets(stage, uptoIdx){
+    if(!parsedHand) return {};
+    const acts = parsedHand.actions[stage] || [];
+    const bets = {};
+    for(let i=0;i<=uptoIdx;i++){
+      const a = acts[i];
+      if(!a) continue;
 
-    let newVisibleBets = {};
-
-    const actions = parsedHand.actions[currentStage] || [];
-
-    // 🌟 Handle transition to neutral state if we're at first action
-    if (currentActionIndex === getFirstActionIndex(currentStage)) {
-      setCurrentActionIndex(-1);
-
-      if (currentStage === "preflop") {
-        setVisibleBets(blindPosts());        // 🠐 show SB & BB again
-      } else {
-        setVisibleBets({});
-      }
-      return;
-    }
-
-
-    let newIndex = currentActionIndex - 1;
-
-    // ⏪ Skip "posts"
-    while (newIndex >= 0 && actions[newIndex].action === "posts") {
-      newIndex--;
-    }
-
-    if (newIndex >= 0) {
-      const action = actions[newIndex];
-      if (["bets", "calls", "raises"].includes(action.action)) {
-        newVisibleBets[action.player] = action.amount;
-      }
-      setVisibleBets(newVisibleBets);
-      setCurrentActionIndex(newIndex);
-    } else {
-      // 🌀 Go to previous stage if possible
-      const currentIndex = stages.indexOf(currentStage);
-      for (let i = currentIndex - 1; i >= 0; i--) {
-        const prevStage = stages[i];
-        const prevActions = parsedHand.actions[prevStage] || [];
-
-        const lastActionIndex = [...prevActions]
-          .map((a, idx) => ({ a, idx }))
-          .reverse()
-          .find(({ a }) => a.action !== "posts");
-
-        if (lastActionIndex) {
-          const actualIndex = lastActionIndex.idx;
-          const action = prevActions[actualIndex];
-
-          if (["bets", "calls", "raises"].includes(action.action)) {
-            newVisibleBets[action.player] = action.amount;
-          }
-
-          setCurrentStage(prevStage);
-          setVisibleBets(newVisibleBets);
-          setCurrentActionIndex(actualIndex);
-          return;
-        }
+      /* show blinds (pre-flop only) */
+      if(stage==="preflop" &&
+         a.action==="posts" &&
+         (a.amount===parsedHand.bigBlind || a.amount===parsedHand.bigBlind/2)){
+        bets[a.player]=(bets[a.player]||0)+a.amount;
+        continue;
       }
 
-      // 🧼 If fully rewound, go neutral
-      setVisibleBets({});
-      setCurrentActionIndex(-1);
-      setCurrentStage("preflop");
+      if(a.action==="bets"   ) bets[a.player]=a.amount;
+      if(a.action==="calls"  ) bets[a.player]=(bets[a.player]||0)+a.amount;
+      if(a.action==="raises" ) bets[a.player]=a.amount;
     }
+    return bets;
   }
 
 
 
+  function handlePrev() {
+    if (!parsedHand) return;
+    const actions = parsedHand.actions[currentStage] || [];
+
+    /* first real action → neutral */
+    if (currentActionIndex === getFirstActionIndex(currentStage)) {
+      setCurrentActionIndex(-1);
+      setVisibleBets(withBlinds());      // keep SB + BB visible in pre-flop
+      return;
+    }
+
+    /* step backward inside the same street */
+    let newIndex = currentActionIndex - 1;
+    while (newIndex >= 0 && actions[newIndex].action === "posts") newIndex--;
+
+    if (newIndex >= 0) {
+      const a = actions[newIndex];
+      setVisibleBets(updateVisibleBets(currentStage, newIndex));
+      setCurrentActionIndex(newIndex);
+      return;
+    }
+
+    /* move to previous street */
+    const prevStageIdx = stages.indexOf(currentStage) - 1;
+    for (let i = prevStageIdx; i >= 0; i--) {
+      const prevStage = stages[i];
+      const prevActions = parsedHand.actions[prevStage] || [];
+      const lastRealIdx = [...prevActions].map((a, idx) => ({ a, idx }))
+        .reverse().find(item => item.a.action !== "posts");
+
+      if (lastRealIdx) {
+        const { a, idx } = lastRealIdx;
+        setCurrentStage(prevStage);
+        setCurrentActionIndex(idx);
+        setVisibleBets(updateVisibleBets(prevStage, idx));
+        return;
+      }
+    }
+
+    /* fully rewound */
+    setCurrentStage("preflop");
+    setCurrentActionIndex(-1);
+    setVisibleBets(withBlinds());
+  }
+
+  function betsSoFar(hand, stage, /*inclusive*/uptoIdx) {
+    const out = {};
+
+    const acts = hand.actions?.[stage] ?? [];
+    for (let i = 0; i <= uptoIdx; i++) {
+      const a = acts[i];
+      if (!a) break;
+
+      /* blinds are just normal “posts”, but we only want SB + BB to show */
+      if (
+        stage === "preflop" &&
+        a.action === "posts" &&
+        (a.amount === hand.bigBlind || a.amount === hand.bigBlind / 2)
+      ) {
+        out[a.player] = a.amount;
+      }
+
+      if (["bets", "calls", "raises"].includes(a.action)) {
+        /* the parser keeps the full “to” amount for raises, so this is
+          already what has to be in front of the player */
+        out[a.player] = a.amount;
+      }
+    }
+    return out;
+  }
 
   function hasPlayerFolded(playerName) {
     if (!parsedHand) return false;
@@ -311,13 +279,15 @@ export default function PokerTable() {
     setIsPlaying(false);
   }
 
-  useEffect(() => {
-    if (!isPlaying) return;
-    const interval = setInterval(() => {
-      handleNext();
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [isPlaying, currentStage]);
+  useEffect(()=>{
+    if(!isPlaying) return;
+    const id=setInterval(handleNext,2000);
+    return ()=>clearInterval(id);
+  },[isPlaying,currentStage]);
+
+  useEffect(()=>{
+    if(parsedHand) setVisibleBets(getBlindPosts(parsedHand));
+  },[parsedHand]);
 
 
   function isPreflopDone() {
@@ -338,20 +308,13 @@ export default function PokerTable() {
     return currentActionIndex >= absoluteLast;  // we’ve reached the end
   }
 
-
-  function getVisibleCards() {
-    if (!parsedHand) return [];
-
-    const board = parsedHand.board;
-
-    /* 👁️  show flop immediately once pre-flop is DONE */
-    if (isPreflopDone()) return board.slice(0, 3);
-
-    if (currentStage === "preflop") return [];
-    if (currentStage === "flop")    return board.slice(0, 3);
-    if (currentStage === "turn")    return board.slice(0, 4);
-
-    return board;          // river / showdown
+  function getVisibleCards(){
+    if(!parsedHand) return [];
+    const b=parsedHand.board;
+    if(currentStage==="preflop") return [];
+    if(currentStage==="flop")    return b.slice(0,3);
+    if(currentStage==="turn")    return b.slice(0,4);
+    return b;
   }
 
   function calculateCurrentPot() {
@@ -403,17 +366,32 @@ export default function PokerTable() {
     return perPlayer ? Math.round((parsedHand.anteTotal || 0) / perPlayer) : 0;
   }
 
-
   function blindPosts() {
     if (!parsedHand) return {};
-
     const posts = {};
-    const preflop = parsedHand.actions.preflop || [];
+    (parsedHand.actions?.preflop ?? []).forEach(a => {
+      if (
+        a.action === "posts" &&
+        (a.amount === parsedHand.bigBlind || a.amount === parsedHand.bigBlind / 2)
+      ) {
+        posts[a.player] = a.amount;
+      }
+    });
+    return posts;
+  }
+
+  function withBlinds(extra = {}) {
+    return currentStage === "preflop" ? { ...blindPosts(), ...extra } : extra;
+  }
+
+  function getBlindPosts(hand) {
+    const posts = {};
+    const preflop = hand?.actions?.preflop || [];
 
     for (const action of preflop) {
       if (
         action.action === "posts" &&
-        (action.amount === parsedHand.bigBlind || action.amount === parsedHand.bigBlind / 2)
+        (action.amount === hand.bigBlind || action.amount === hand.bigBlind / 2)
       ) {
         posts[action.player] = action.amount;
       }
@@ -422,34 +400,11 @@ export default function PokerTable() {
     return posts;
   }
 
-
   return (
     <div className="poker-wrapper">
       <div className="table-container">
         <div className="table-heading">
           <h1 className="title">Hand Replayer</h1>
-
-          {/* <input
-            type="file"
-            accept=".txt"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              const reader = new FileReader();
-              reader.onload = (e) => {
-                const content = e.target.result;
-                const parsedHands = parseRedDragonHands(content);
-                setHands(parsedHands);
-                setCurrentHandIndex(0);
-                setCurrentStage("preflop");
-                setCurrentActionIndex(-1);
-                setIsPlaying(false);
-              };
-              reader.readAsText(file);
-            }}
-            style={{ marginBottom: "1rem" }}
-          /> */}
-
           <textarea
             rows={8}
             cols={80}
@@ -457,7 +412,6 @@ export default function PokerTable() {
             onChange={(e) => {
               const parsedHands = parseRedDragonHands(e.target.value);
               setHands(parsedHands);
-              setVisibleBets(blindPosts());
               setCurrentHandIndex(0);
               setCurrentStage("preflop");
               setCurrentActionIndex(-1);
@@ -500,9 +454,19 @@ export default function PokerTable() {
                       <div className="name-stack">
                         <div className="name">{player.name}</div>
                           <div className="stack">
-                            {parsedHand?.bigBlind
-                              ? ((player.stack - contributionSoFar(parsedHand, currentStage, currentActionIndex, player.name)) / parsedHand.bigBlind).toFixed(2)
-                              : player.stack} BB
+                            {
+                              parsedHand?.bigBlind
+                                ? Math.max(
+                                    0,
+                                    (player.stack - contributionSoFar(
+                                      parsedHand,
+                                      currentStage,
+                                      currentActionIndex,
+                                      player.name
+                                    )) / parsedHand.bigBlind
+                                  ).toFixed(2)
+                                : player.stack
+                            } BB
                           </div>
                         <div className="position-tag">{player.position}</div>
                       </div>
