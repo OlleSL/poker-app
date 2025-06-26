@@ -1,16 +1,13 @@
 export function parseRedDragonHands(rawText) {
-  // 1. line-ending normalisation (also removes a trailing BOM if present)
   const text = rawText.replace(/\r\n/g, '\n').replace(/^\uFEFF/, '').trim();
 
-  // 2. split every time a new line starts with something … Hand #<digits>
   const handBlocks = text
-    .split(/(?:^|\n)(?=[^\n]*\bHand #\d+)/g)   // <── new pattern
+    .split(/(?:^|\n)(?=[^\n]*\bHand #\d+)/g)
     .map(b => b.trim())
     .filter(Boolean);
 
-  return handBlocks.map(parseSingleHand).reverse();      // no length-check needed
+  return handBlocks.map(parseSingleHand).reverse();
 }
-
 
 function parseSingleHand(rawText) {
   const lines = rawText.split("\n").map((line) => line.trim());
@@ -25,6 +22,7 @@ function parseSingleHand(rawText) {
       turn: [],
       river: [],
     },
+    antes: [],
     winner: null,
     totalPot: null,
     anteTotal: 0
@@ -92,7 +90,7 @@ function parseSingleHand(rawText) {
         let amount = null;
 
         if (action === "raises") {
-          const raiseMatch = detail.match(/to (\d+)/); // ✅ get the total
+          const raiseMatch = detail.match(/to (\d+)/); 
           if (raiseMatch) {
             amount = parseInt(raiseMatch[1]);
           }
@@ -123,9 +121,8 @@ function parseSingleHand(rawText) {
           amount: parseInt(amount),
           raw: line,
         });
-
         hand.anteTotal = (hand.anteTotal || 0) + parseInt(amount);
-
+        hand.antes.push({ player, amount: parseInt(amount, 10) });
       }
     }
 

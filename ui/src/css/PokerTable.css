@@ -129,7 +129,7 @@ body {
 
 .pot {
   position: absolute;
-  top:18%;
+  top:-7%;
   left: 50%;
   transform: translateX(-50%);
   font-weight: bold;
@@ -140,7 +140,7 @@ body {
 .ante {
   position: absolute;
   top: 38%;
-  left: 50%;
+  left: 48%;
   transform: translateX(-50%);
   font-weight: bold;
   font-size: 18px;
@@ -154,17 +154,17 @@ body {
 }
 
 .ante-label {
-  margin-left: calc( (var(--chips, 1) - 1) * 4px + 24px ); /* room for chips */
+  margin-left: calc( (var(--chips, 1) - 1) * 4px + 24px ); 
   font-weight: 700;
 }
-
+ 
 /* 👇 This is now the main border container around the player identity */
 .player-info {
   display: flex;
   align-items: center;
   gap: 8px;
   justify-content: flex-start;
-  background: #224;
+  background: rgb(69, 81, 88);
   border: 2px solid #aaa;
   border-radius: 10px;
   padding: 6px 10px;

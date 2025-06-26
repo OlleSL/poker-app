@@ -12,8 +12,6 @@ const suitSymbols = {
   c: "♣",
 }; 
 
-const initialPlayers = [];
-
 const stages = ["preflop", "flop", "turn", "river", "showdown"];
 
 function renderCard(card) {
@@ -43,6 +41,10 @@ export default function PokerTable() {
 
   const dynamicPlayers = Object.values(parsedHand?.players || {});
 
+  
+  /* ------------------------------------------------------------------ */
+  /*  Helpers                                                           */
+  /* ------------------------------------------------------------------ */
   function getNextActingPlayerName() {
     if (!parsedHand) return null;
 
@@ -67,45 +69,82 @@ export default function PokerTable() {
     return null;
   }
 
-  /* ------------------------------------------------------------------ */
-  /*  Helpers                                                           */
-  /* ------------------------------------------------------------------ */
+  function contributionSoFar(hand, untilStreet, untilIdx, player) {
+    if (!hand) return 0;
 
-  /**  How much this player has put in *so far*  */
-  function contributionSoFar(hand, untilStage, untilIndex, player){
-    if(!hand) return 0;
-    let total   = 0;
-    const loops = ["preflop","flop","turn","river"];
-    for(const st of loops){
-      const acts          = hand.actions[st] ?? [];
-      const neutral       = st === untilStage && untilIndex === -1;
-      const moneyActs     = neutral ? ["posts"] : ["posts","bets","calls"];
-      let last            = acts.length-1;
-      if(st === untilStage && untilIndex !== -1) last = untilIndex;
+    let total = 0;
+    const order = ["preflop", "flop", "turn", "river"];
 
-      for(let i=0;i<=last;i++){
+    for (const st of order) {
+      const acts = hand.actions[st] || [];
+
+      const last = st === untilStreet
+        ? (untilIdx === -1 ? -1 : untilIdx)   // –1 ⇒ neutral state
+        : acts.length - 1;
+
+      let investedStreet = 0;                 // what this player has in front
+
+      for (let i = 0; i <= last; i++) {
         const a = acts[i];
-        if(!a || a.player !== player) continue;
-        if(moneyActs.includes(a.action)) total += a.amount ?? 0;
+        if (!a || a.player !== player) continue;
 
-        /* raises are “to …”  ⇒ add only increment on that street           */
-        if (!neutral && a.action === "raises") {
-          const alreadyPutIn = acts
+        if (a.action === "bets" || a.action === "calls") {
+          total          += a.amount ?? 0;
+          investedStreet += a.amount ?? 0;
+        }
+
+        if (a.action === "raises") {
+          /* Only SB / BB (≥ ½ BB) should reduce the increment.
+            Antes are already part of `initialPosts` and must NOT be
+            deducted again. */
+          const postedBlind = acts
             .slice(0, i)
-            .filter(
-              p =>
+            .filter(p =>
                 p.player === player &&
-                ["posts", "bets", "calls", "raises"].includes(p.action)
-            )
+                p.action === "posts" &&
+                (p.amount ?? 0) >= hand.bigBlind / 2)   // ← ignore antes
             .reduce((s, p) => s + (p.amount ?? 0), 0);
 
-          total += (a.amount ?? 0) - alreadyPutIn;
+          const alreadyInPot = investedStreet + postedBlind;
+          const inc = Math.max(0, (a.amount ?? 0) - alreadyInPot);
+
+          total         += inc;
+          investedStreet = a.amount ?? 0;      // now fully invested
         }
+        /* posts (blinds/antes) are never added here – they live
+          exclusively in `initialPosts` */
       }
-      if(st === untilStage) break;
+      if (st === untilStreet) break;
     }
     return total;
   }
+
+  // ─── TOTAL POSTS PER PLAYER (blinds + antes … once) ─────────────────────────
+  const initialPosts = React.useMemo(() => {
+    if (!parsedHand) return {};
+
+    const out = {};
+
+    // ▸ SB / BB / straddle (amount ≥ ½ BB)  – no antes here
+    Object.values(parsedHand.actions || {}).forEach(stageActs => {
+      stageActs.forEach(a => {
+        if (
+          a.action === "posts" &&
+          (a.amount ?? 0) >= parsedHand.bigBlind / 2        // ← filter out antes
+        ) {
+          out[a.player] = (out[a.player] || 0) + (a.amount ?? 0);
+        }
+      });
+    });
+
+    // ▸ antes – every player exactly once
+    (parsedHand.antes || []).forEach(({ player, amount }) => {
+      out[player] = out[player] || 0;  // just mark presence
+    });
+
+    return out;                                // { playerName: totalPosted }
+  }, [parsedHand]);
+
 
   function handleNext(){
     if(!parsedHand) return;
@@ -273,12 +312,6 @@ export default function PokerTable() {
     setIsPlaying((prev) => !prev);
   }
 
-  function jumpToStage(stage) {
-    setCurrentStage(stage);
-    setCurrentActionIndex(-1);
-    setIsPlaying(false);
-  }
-
   useEffect(()=>{
     if(!isPlaying) return;
     const id=setInterval(handleNext,2000);
@@ -289,25 +322,6 @@ export default function PokerTable() {
     if(parsedHand) setVisibleBets(getBlindPosts(parsedHand));
   },[parsedHand]);
 
-
-  function isPreflopDone() {
-    if (currentStage !== "preflop" || !parsedHand) return false;
-
-    const acts = parsedHand.actions.preflop ?? [];
-
-    // index of the last   non-“posts”   action
-    const lastRealIdx = [...acts]
-      .reverse()
-      .findIndex(a => a.action !== "posts");
-
-    // if there were no “real” actions (rare), nothing to show
-    if (lastRealIdx === -1) return false;
-
-    const absoluteLast = acts.length - 1 - lastRealIdx;
-
-    return currentActionIndex >= absoluteLast;  // we’ve reached the end
-  }
-
   function getVisibleCards(){
     if(!parsedHand) return [];
     const b=parsedHand.board;
@@ -317,31 +331,69 @@ export default function PokerTable() {
     return b;
   }
 
+  /** ------------------------------------------------------------------  
+   *  Accurate pot size up to (and including) the currentActionIndex  
+   *  – handles posts / bets / calls incrementally  
+   *  – handles “raise to …” by adding only the increment on this street  
+   * ------------------------------------------------------------------ */
   function calculateCurrentPot() {
     if (!parsedHand) return 0;
 
+    // start with antes
     let pot = parsedHand.anteTotal || 0;
 
-    // ✅ Add small blind and big blind
-    const sb = parsedHand.actions.preflop.find((a) => a.action === "posts" && a.amount === parsedHand.bigBlind / 2);
-    const bb = parsedHand.actions.preflop.find((a) => a.action === "posts" && a.amount === parsedHand.bigBlind);
+    /* -----------------------------------------------------------
+    * 👉  Always add SB + BB right away (even in the neutral state)
+    * ----------------------------------------------------------- */
+    if (parsedHand.actions?.preflop) {
+      const sb = parsedHand.actions.preflop.find(
+        a => a.action === "posts" && a.amount === parsedHand.bigBlind / 2
+      );
+      const bb = parsedHand.actions.preflop.find(
+        a => a.action === "posts" && a.amount === parsedHand.bigBlind
+      );
+      if (sb) pot += sb.amount;
+      if (bb) pot += bb.amount;
+    }
 
-    if (sb) pot += sb.amount;
-    if (bb) pot += bb.amount;
+    /* If we are still in the neutral state of the pre-flop street
+      (-1 means no real action yet) we’re done – the pot is just
+      antes + SB + BB.  */
+    if (currentStage === "preflop" && currentActionIndex === -1) {
+      return pot;
+    }
 
-    // ✅ Add actual betting/calling/raising after blinds+antes
-    for (let i = 0; i < stages.length; i++) {
-      const stage = stages[i];
-      const actions = parsedHand.actions[stage] || [];
+    /* -----------------------------------------------------------
+    * Everything below is unchanged: we walk through the streets
+    * and add bets, calls and *increments* of raises.
+    * ----------------------------------------------------------- */
+    const order = ["preflop", "flop", "turn", "river"];
+    for (const st of order) {
+      const acts = parsedHand.actions[st] || [];
+      const invested = {};
+      const isCurrent = st === currentStage;
+      const lastIdx =
+        isCurrent ? (currentActionIndex === -1 ? -1 : currentActionIndex)
+                  : acts.length - 1;
 
-      for (let j = 0; j < actions.length; j++) {
-        if (i === stages.indexOf(currentStage) && j > currentActionIndex) return pot;
+      for (let i = 0; i <= lastIdx; i++) {
+        const a = acts[i];
+        if (!a) continue;
 
-        const action = actions[j];
-        if (["bets", "calls", "raises"].includes(action.action)) {
-          pot += parseFloat(action.amount || 0);
+        if (a.action === "bets" || a.action === "calls") {
+          pot += a.amount ?? 0;
+          invested[a.player] = (invested[a.player] || 0) + (a.amount ?? 0);
+        }
+
+        if (a.action === "raises") {
+          const already = invested[a.player] || 0;
+          const inc = Math.max(0, (a.amount ?? 0) - already);
+          pot += inc;
+          invested[a.player] = a.amount ?? 0;
         }
       }
+
+      if (isCurrent) break;   // don’t look past the street we’re on
     }
 
     return pot;
@@ -454,19 +506,22 @@ export default function PokerTable() {
                       <div className="name-stack">
                         <div className="name">{player.name}</div>
                           <div className="stack">
-                            {
-                              parsedHand?.bigBlind
-                                ? Math.max(
-                                    0,
-                                    (player.stack - contributionSoFar(
-                                      parsedHand,
-                                      currentStage,
-                                      currentActionIndex,
-                                      player.name
-                                    )) / parsedHand.bigBlind
-                                  ).toFixed(2)
-                                : player.stack
-                            } BB
+                            {(() => {
+                              const posted = initialPosts[player.name] || 0;
+                              const invested = contributionSoFar(
+                                parsedHand,
+                                currentStage,
+                                currentActionIndex,
+                                player.name
+                              );
+                              const antePaid = parsedHand?.antes?.find(a => a.player === player.name)?.amount ?? 0;
+
+                              const chipsLeft = Math.max(0, player.stack - posted - invested - antePaid);
+
+                              return parsedHand?.bigBlind
+                                ? (chipsLeft / parsedHand.bigBlind).toFixed(2) + " BB"
+                                : chipsLeft + " chips";
+                            })()}
                           </div>
                         <div className="position-tag">{player.position}</div>
                       </div>
@@ -527,22 +582,30 @@ export default function PokerTable() {
             
             {/* ---- ANTE --------------------------------------------------------- */}
             <div className="ante">
-              {/* chip pile */}
-              {[...Array(anteChipCount())].map((_, i) => (
-                <img
-                  key={i}
-                  src={chipImg}
-                  alt="ante-chip"
-                  className="ante-chip"
-                  style={{ right: `${i * 20 + 70}px`, zIndex: i }}   // slight fan-out
-                />
-              ))}
-
-              {/* numeric label */}
-              <span className="ante-label">
-                {calculateAnte()}
-              </span>
+              {currentStage === "preflop" ? (
+                <>
+                  {/* Chip pile for antes */}
+                  {[...Array(anteChipCount())].map((_, i) => (
+                    <img
+                      key={i}
+                      src={chipImg}
+                      alt="ante-chip"
+                      className="ante-chip"
+                      style={{ right: `${i * 20 + 70}px`, zIndex: i }}
+                    />
+                  ))}
+                  <span className="ante-label">{calculateAnte()}</span>
+                </>
+              ) : (
+                <span className="ante-label">
+                  Pot:{" "}
+                  {parsedHand?.bigBlind
+                    ? (calculateCurrentPot() / parsedHand.bigBlind).toFixed(2) + " BB"
+                    : calculateCurrentPot()}
+                </span>
+              )}
             </div>
+
           </div>
         </div>
 
