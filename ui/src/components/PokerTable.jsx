@@ -12,6 +12,16 @@ const suitSymbols = {
   c: "♣",
 }; 
 
+const seatLayoutMap = {
+  2: [4, 0],
+  3: [4, 2, 0],
+  4: [4, 2, 0, 6],
+  5: [4, 3, 1, 0, 6],
+  6: [4, 3, 2, 0, 6, 5],
+  7: [4, 3, 2, 1, 0, 6, 5],
+};
+
+
 const stages = ["preflop", "flop", "turn", "river", "showdown"];
 
 function renderCard(card) {
@@ -35,6 +45,7 @@ export default function PokerTable() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentActionIndex, setCurrentActionIndex] = useState(0);
   const [visibleBets, setVisibleBets] = useState({});
+  const [flashAction, setFlashAction] = useState([]); // { player, action, id }
 
 
   const parsedHand = hands[currentHandIndex] || null;
@@ -93,23 +104,21 @@ export default function PokerTable() {
           investedStreet += a.amount ?? 0;
         }
 
+        if (a.action === "calls") {
+          const alreadyPosted = initialPosts[player] || 0;
+          const previous = total; // current total before this call
+          const needed = (a.amount ?? 0) - alreadyPosted;
+          const callAmount = Math.max(0, needed - previous); // how much more they had to call
+
+          total += callAmount;
+        }
+
         if (a.action === "raises") {
-          /* Only SB / BB (≥ ½ BB) should reduce the increment.
-            Antes are already part of `initialPosts` and must NOT be
-            deducted again. */
-          const postedBlind = acts
-            .slice(0, i)
-            .filter(p =>
-                p.player === player &&
-                p.action === "posts" &&
-                (p.amount ?? 0) >= hand.bigBlind / 2)   // ← ignore antes
-            .reduce((s, p) => s + (p.amount ?? 0), 0);
-
-          const alreadyInPot = investedStreet + postedBlind;
-          const inc = Math.max(0, (a.amount ?? 0) - alreadyInPot);
-
-          total         += inc;
-          investedStreet = a.amount ?? 0;      // now fully invested
+          const alreadyPosted = initialPosts[player] || 0;
+          const alreadyInvested = investedStreet + alreadyPosted;
+          const raiseIncrement = Math.max(0, (a.amount ?? 0) - alreadyInvested);
+          total += raiseIncrement;
+          investedStreet = a.amount ?? 0;
         }
         /* posts (blinds/antes) are never added here – they live
           exclusively in `initialPosts` */
@@ -145,35 +154,56 @@ export default function PokerTable() {
     return out;                                // { playerName: totalPosted }
   }, [parsedHand]);
 
-
-  function handleNext(){
-    if(!parsedHand) return;
+  function handleNext() {
+    if (!parsedHand) return;
     const acts = parsedHand.actions[currentStage] || [];
 
-    /* neutral → first real action */
-    if(currentActionIndex===-1){
-      const first=getFirstActionIndex(currentStage);
-      if(first<acts.length){
-        setVisibleBets(updateVisibleBets(currentStage,first));
+    // Neutral → first real action
+    if (currentActionIndex === -1) {
+      const first = getFirstActionIndex(currentStage);
+      if (first < acts.length) {
+        const action = acts[first];
+        setVisibleBets(updateVisibleBets(currentStage, first));
         setCurrentActionIndex(first);
-      }else{
-        setCurrentActionIndex(first); // e.g. flop-reveal click
+
+        if (action && action.action !== "posts") {
+          const flashId = Date.now(); // unique ID
+          setFlashAction({ player: action.player, action: action.action, id: flashId });
+
+          setTimeout(() => {
+            setFlashAction((current) => current?.id === flashId ? null : current);
+          }, 1000);
+        }
+      } else {
+        setCurrentActionIndex(first);
       }
       return;
     }
 
-    /* step inside current street */
-    let idx=currentActionIndex+1;
-    while(idx<acts.length && acts[idx].action==="posts") idx++;
-    if(idx<acts.length){
-      setVisibleBets(updateVisibleBets(currentStage,idx));
+    // Step inside current street
+    let idx = currentActionIndex + 1;
+    while (idx < acts.length && acts[idx].action === "posts") idx++;
+
+    if (idx < acts.length) {
+      const action = acts[idx];
+      setVisibleBets(updateVisibleBets(currentStage, idx));
       setCurrentActionIndex(idx);
+
+      if (action.action !== "posts") {
+        const flashId = Date.now();
+        setFlashAction({ player: action.player, action: action.action, id: flashId });
+
+        setTimeout(() => {
+          setFlashAction((current) => current?.id === flashId ? null : current);
+        }, 1000);
+      }
+
       return;
     }
 
-    /* move to next street — stop in neutral state (-1) first               */
-    const nextIdx = stages.indexOf(currentStage)+1;
-    if(nextIdx<stages.length){
+    // Move to next street
+    const nextIdx = stages.indexOf(currentStage) + 1;
+    if (nextIdx < stages.length) {
       setCurrentStage(stages[nextIdx]);
       setCurrentActionIndex(-1);
       setVisibleBets({});
@@ -256,32 +286,6 @@ export default function PokerTable() {
     setVisibleBets(withBlinds());
   }
 
-  function betsSoFar(hand, stage, /*inclusive*/uptoIdx) {
-    const out = {};
-
-    const acts = hand.actions?.[stage] ?? [];
-    for (let i = 0; i <= uptoIdx; i++) {
-      const a = acts[i];
-      if (!a) break;
-
-      /* blinds are just normal “posts”, but we only want SB + BB to show */
-      if (
-        stage === "preflop" &&
-        a.action === "posts" &&
-        (a.amount === hand.bigBlind || a.amount === hand.bigBlind / 2)
-      ) {
-        out[a.player] = a.amount;
-      }
-
-      if (["bets", "calls", "raises"].includes(a.action)) {
-        /* the parser keeps the full “to” amount for raises, so this is
-          already what has to be in front of the player */
-        out[a.player] = a.amount;
-      }
-    }
-    return out;
-  }
-
   function hasPlayerFolded(playerName) {
     if (!parsedHand) return false;
 
@@ -308,6 +312,20 @@ export default function PokerTable() {
     return folded;
   }
 
+  function isHandOver() {
+    return currentStage === "showdown" || getRemainingPlayers() <= 1;
+  }
+
+  function getWinnerName() {
+    if (!isHandOver()) return null;
+    const remaining = dynamicPlayers.filter(p => !hasPlayerFolded(p.name));
+    return remaining.length === 1 ? remaining[0].name : null;
+  }
+
+  function getRemainingPlayers() {
+    return dynamicPlayers.filter(p => !hasPlayerFolded(p.name)).length;
+  }
+
   function togglePlay() {
     setIsPlaying((prev) => !prev);
   }
@@ -321,6 +339,14 @@ export default function PokerTable() {
   useEffect(()=>{
     if(parsedHand) setVisibleBets(getBlindPosts(parsedHand));
   },[parsedHand]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setFlashActions((prev) => prev.filter((a) => now - a.timestamp < 1000));
+    }, 100); // check every 100ms
+    return () => clearInterval(interval);
+  }, []);
 
   function getVisibleCards(){
     if(!parsedHand) return [];
@@ -452,6 +478,30 @@ export default function PokerTable() {
     return posts;
   }
 
+function getRotatedPlayers() {
+  if (!parsedHand) return [];
+
+  const players = Object.values(parsedHand.players || {});
+  const heroIndex = players.findIndex(p => p.hero);
+  const playerCount = players.length;
+
+  if (heroIndex === -1 || playerCount === 0) {
+    // fallback to default seat order
+    return players.map((p, i) => ({ ...p, visualSeat: i }));
+  }
+
+  const HERO_VISUAL_SEAT = 6;
+
+  // Rotate players so hero is at index 0
+  const rotated = [...players.slice(heroIndex), ...players.slice(0, heroIndex)];
+  const seatMap = seatLayoutMap[rotated.length] || [];
+
+  return rotated.map((player, i) => ({
+    ...player,
+    visualSeat: seatMap[i] ?? i,
+  }));
+}
+  
   return (
     <div className="poker-wrapper">
       <div className="table-container">
@@ -472,35 +522,49 @@ export default function PokerTable() {
             style={{ marginTop: "1rem", padding: "0.5rem", fontFamily: "monospace", width: "100%" }}
           />
 
-          <Link to="/gto" className="gto-link">Click here for GTO breakdown</Link>
-          <div className="underline"></div>
+          {/* <Link to="/gto" className="gto-link">Click here for GTO breakdown</Link> */}
+          {/* <div className="underline"></div> */}
         </div>
 
         <div className="table-outer-ring">
-          <div className="table">
-            {dynamicPlayers.map((player) => {
+          <div className={"table"}>
+            {getRotatedPlayers().map((player, visualIndex) => {
               const currentAction = parsedHand?.actions[currentStage]?.[currentActionIndex];
               const isActing = currentAction?.player === player.name;
               const isNextToAct = player.name === getNextActingPlayerName();
               return (
                 <div
                   key={player.id}
-                  className={`seat seat-${Math.floor(player.seat)} 
+                  className={`seat seat-${player.visualSeat}
                     ${player.id === currentPlayerId ? "active-player" : ""} 
-                    ${isNextToAct ? "next-acting-player" : ""} 
+                    ${player.name === getNextActingPlayerName() ? "next-acting-player" : ""} 
                     ${hasPlayerFolded(player.name) ? "folded" : ""}`}
                 >
                   <div className={`player ${isNextToAct ? "next-acting-player" : ""}`}>
                     <div className="cards">
-                      {player.cards.length > 0
-                        ? player.cards.map((card, i) => (
-                            <React.Fragment key={i}>{renderCard(card)}</React.Fragment>
-                          ))
-                        : [0, 1].map((_, i) => (
-                            <div className="card back" key={i}>🂠</div>
-                          ))}
-                    </div>
+                      {(() => {
+                        const isHero = player.seat === 1;
+                        const isShowdown = currentStage === "showdown";
+                        const hasCards = player.cards.length > 0;
 
+                        if (isHero) {
+                          // Always show hero's cards
+                          return player.cards.map((card, i) => (
+                            <React.Fragment key={i}>{renderCard(card)}</React.Fragment>
+                          ));
+                        } else if (isShowdown && hasCards) {
+                          // Show villains' cards only at showdown if present
+                          return player.cards.map((card, i) => (
+                            <React.Fragment key={i}>{renderCard(card)}</React.Fragment>
+                          ));
+                        } else {
+                          // Hidden cards (face-down)
+                          return [0, 1].map((_, i) => (
+                            <div className="card back" key={i}>🂠</div>
+                          ));
+                        }
+                      })()}
+                    </div>
                     <div className="player-info">
                       <img src={avatar} alt="avatar" className="avatar" />
                       <div className="name-stack">
@@ -516,14 +580,28 @@ export default function PokerTable() {
                               );
                               const antePaid = parsedHand?.antes?.find(a => a.player === player.name)?.amount ?? 0;
 
-                              const chipsLeft = Math.max(0, player.stack - posted - invested - antePaid);
+                              let remaining = player.stack - posted - invested - antePaid;
+
+                              if (isHandOver()) {
+                                const winner = getWinnerName();
+                                if (player.name === winner) {
+                                  remaining += calculateCurrentPot();
+                                }
+                              }
+
+                              const chipsLeft = Math.max(0, remaining);
 
                               return parsedHand?.bigBlind
                                 ? (chipsLeft / parsedHand.bigBlind).toFixed(2) + " BB"
                                 : chipsLeft + " chips";
                             })()}
                           </div>
-                        <div className="position-tag">{player.position}</div>
+                          {flashAction?.player === player.name && (
+                            <div className="action-flash">{flashAction.action.toUpperCase()}</div>
+                          )}
+                          {player.position && (
+                            <div className="position-tag">{player.position}</div>
+                          )}
                       </div>
                     </div>
                   </div>
@@ -531,15 +609,29 @@ export default function PokerTable() {
               );
             })}
 
-            {dynamicPlayers.map((player) => {
+            {getRotatedPlayers().map((player) => {
               const betAmount = visibleBets[player.name];
               if (!betAmount || betAmount === 0) return null;
 
               return (
-                <div className={`chip-tag chip-tag-${player.seat}`} key={`bet-${player.name}`}>
+                <div className={`chip-tag chip-tag-${player.visualSeat}`} key={`bet-${player.name}`}>
                   💰 {(betAmount / parsedHand.bigBlind).toFixed(2)} BB
                 </div>
               );
+            })}
+            
+            {getRotatedPlayers().map((player, visualIndex) => {
+              if (player.position === "BTN") {
+                return (
+                  <div
+                    key="button-chip"
+                    className={`button-chip button-chip-${player.visualSeat}`}
+                  >
+                    B
+                  </div>
+                );
+              }
+              return null;
             })}
 
             <div className="community">

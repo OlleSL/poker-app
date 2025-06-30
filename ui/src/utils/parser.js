@@ -25,8 +25,18 @@ function parseSingleHand(rawText) {
     antes: [],
     winner: null,
     totalPot: null,
-    anteTotal: 0
+    anteTotal: 0,
   };
+
+  // Extract button seat
+  const btnLine = lines.find(line => line.includes("Seat #") && line.includes("is the button"));
+  let buttonSeatNumber = null;
+  if (btnLine) {
+    const match = btnLine.match(/Seat #(\d+)/);
+    if (match) {
+      buttonSeatNumber = parseInt(match[1], 10);
+    }
+  }
 
   const headerLine = lines.find(
     (line) => line.includes("Hold'em") && line.includes("(")
@@ -40,7 +50,6 @@ function parseSingleHand(rawText) {
   }
 
   let street = "preflop";
-  let seatCounter = 0;
 
   for (let line of lines) {
     if (line.startsWith("Dealt to")) {
@@ -48,18 +57,6 @@ function parseSingleHand(rawText) {
       if (match) {
         hand.hero = match[1];
         hand.heroCards = match[2].split(" ");
-        if (!hand.players[hand.hero]) {
-          hand.players[hand.hero] = {
-            id: hand.hero,
-            name: hand.hero,
-            cards: hand.heroCards,
-            seat: seatCounter++,
-            stack: 0,
-            position: "",
-          };
-        } else {
-          hand.players[hand.hero].cards = hand.heroCards;
-        }
       }
     }
 
@@ -88,29 +85,18 @@ function parseSingleHand(rawText) {
         detail = detail.trim();
 
         let amount = null;
-
         if (action === "raises") {
-          const raiseMatch = detail.match(/to (\d+)/); 
-          if (raiseMatch) {
-            amount = parseInt(raiseMatch[1]);
-          }
+          const raiseMatch = detail.match(/to (\d+)/);
+          if (raiseMatch) amount = parseInt(raiseMatch[1]);
         } else {
           const amountMatch = detail.match(/(\d+)/);
-          if (amountMatch) {
-            amount = parseInt(amountMatch[1]);
-          }
+          if (amountMatch) amount = parseInt(amountMatch[1]);
         }
 
-        hand.actions[street].push({
-          player,
-          action,
-          amount,
-          raw: line,
-        });
+        hand.actions[street].push({ player, action, amount, raw: line });
       }
     }
 
-    // Handle "posts the ante" as a separate case
     if (line.includes("posts the ante")) {
       const match = line.match(/^(\w+): posts the ante (\d+)/);
       if (match) {
@@ -121,8 +107,8 @@ function parseSingleHand(rawText) {
           amount: parseInt(amount),
           raw: line,
         });
-        hand.anteTotal = (hand.anteTotal || 0) + parseInt(amount);
-        hand.antes.push({ player, amount: parseInt(amount, 10) });
+        hand.anteTotal += parseInt(amount);
+        hand.antes.push({ player, amount: parseInt(amount) });
       }
     }
 
@@ -138,19 +124,15 @@ function parseSingleHand(rawText) {
       const match = line.match(/Seat (\d+): (\w+).*?\((\d+)\s+in chips\)/);
       if (match) {
         const [, seat, name, stackStr] = match;
-        const stack = stackStr ? parseInt(stackStr, 10) : 0;
-        if (!hand.players[name]) {
-          hand.players[name] = {
-            id: name,
-            name,
-            cards: [],
-            seat: parseInt(seat, 10),
-            stack,
-            position: "",
-          };
-        } else {
-          hand.players[name].stack = stack;
-        }
+        const stack = parseInt(stackStr, 10);
+        hand.players[name] = {
+          id: name,
+          name,
+          cards: [],
+          seat: parseInt(seat, 10),
+          stack,
+          position: "",
+        };
       }
 
       const showMatch = line.match(/Seat \d+: (\w+).*?\[(.*?)\]/);
@@ -168,5 +150,68 @@ function parseSingleHand(rawText) {
     }
   }
 
+  // Assign hero cards
+  if (hand.hero && hand.players[hand.hero]) {
+    hand.players[hand.hero].cards = hand.heroCards;
+  }
+
+  // Sort players by seat
+  // Step 1: Sort by seat number
+  let sortedPlayers = Object.values(hand.players).sort((a, b) => a.seat - b.seat);
+
+  // Step 2: Find the seat number of BB
+  const bbPlayer = hand.actions.preflop.find(a => a.action === "posts" && a.amount === hand.bigBlind);
+  const bbName = bbPlayer?.player;
+  const bbSeat = hand.players[bbName]?.seat;
+
+  // Step 3: Rotate so UTG (left of BB) is first
+  if (bbSeat != null) {
+    const bbIdx = sortedPlayers.findIndex(p => p.seat === bbSeat);
+    const utgIdx = (bbIdx + 1) % sortedPlayers.length;
+    sortedPlayers = [
+      ...sortedPlayers.slice(utgIdx),
+      ...sortedPlayers.slice(0, utgIdx)
+    ];
+  }
+
+  // Step 4: Assign real positions based on number of players
+  const posMap = {
+    2: ["SB", "BB"],
+    3: ["UTG", "SB", "BB"],
+    4: ["UTG", "BTN", "SB", "BB"],
+    5: ["UTG", "MP", "BTN", "SB", "BB"],
+    6: ["UTG", "MP", "CO", "BTN", "SB", "BB"],
+    7: ["UTG", "MP", "HJ", "CO", "BTN", "SB", "BB"],
+    8: ["UTG", "UTG+1", "MP", "HJ", "CO", "BTN", "SB", "BB"],
+  };
+
+  const positions = posMap[sortedPlayers.length] || [];
+
+  sortedPlayers.forEach((p, i) => {
+    p.position = positions[i] || "";
+  });
+
+  // Step 5: Rotate again to make hero bottom (visual seat 4)
+  const heroIndex = sortedPlayers.findIndex(p => p.name === hand.hero);
+  if (heroIndex !== -1) {
+    const offset = 4;
+    const rotated = [
+      ...sortedPlayers.slice(heroIndex),
+      ...sortedPlayers.slice(0, heroIndex)
+    ];
+    const finalOrder = rotated.map((p, i) => ({
+      ...p,
+      visualSeat: (i + offset) % rotated.length
+    }));
+
+    const playerMap = {};
+    finalOrder.forEach(p => {
+      playerMap[p.name] = p;
+    });
+
+    hand.players = playerMap;
+  }
+
   return hand;
 }
+

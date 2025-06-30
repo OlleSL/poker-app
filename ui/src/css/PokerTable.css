@@ -8,7 +8,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #123;
+  background-color: rgb(73, 73, 73);
   align-items: center;
   justify-content: center;
 }
@@ -53,15 +53,18 @@ body {
   z-index: 8;
 }
 
-/* seat-based tag positions — tweak until it looks perfect */
-.chip-tag-0 { top:  10%; left: 50%; }  /* UTG / top-centre    */
-.chip-tag-1 { top:  26%; left: 75%; }
-.chip-tag-2 { top:  55%; left: 80%; }
-.chip-tag-3 { top:  80%; left: 72%; }
-.chip-tag-4 { top:  80%; left: 50%; }
-.chip-tag-5 { top:  80%; left: 28%; }
-.chip-tag-6 { top:  55%; left:  20%; }  /* ← now you can go “beyond” the seat */
+.chip-tag-0 { top:  82%; left: 50%; } 
+.chip-tag-1 { top: 80%; left: 28%; }
+.chip-tag-2 { top:  55%; left: 20%; }
+.chip-tag-3 { top:  32%; left: 28%; }
+.chip-tag-4 { top:  32%; left: 72%; }
+.chip-tag-5 { top: 55%; left: 80%; }
+.chip-tag-6 { top:  80%; left:  72%; }
 .chip-tag-7 { top:  26%; left: 25%; }
+
+
+/* seat-based tag positions — tweak until it looks perfect */
+
 
 .seat {
   position: absolute;
@@ -69,14 +72,14 @@ body {
   transform: translate(-50%, -50%);
 }
 
-.seat-0 { top: 0%;   left: 50%; }
-.seat-1 { top: 10%;  left: 85%; }
-.seat-2 { top: 50%;  left: 100%; }
-.seat-3 { top: 85%;  left: 85%; }
-.seat-4 { top: 100%; left: 50%; }
-.seat-5 { top: 85%;  left: 15%; }
-.seat-6 { top: 50%;  left: 0%; }
-.seat-7 { top: 10%;  left: 15%; }
+.seat-0 { top: 100%; left: 50%; } /*bajkee*/
+.seat-1 { top: 85%;  left: 15%; } /*skallo*/
+.seat-2 { top: 50%;  left: 0%; } 
+.seat-3 { top: 15%;   left: 15%; } /*timmy*/
+.seat-4 { top: 15%;  left: 85%; } /**/
+.seat-5 { top: 50%;  left: 100%; } /**/
+.seat-6 { top: 85%;  left: 85%; } /**/
+.seat-7 { top: 10%;  left: 15%; } /**/
 
 .player {
   background-color: transparent;
@@ -164,7 +167,7 @@ body {
   align-items: center;
   gap: 8px;
   justify-content: flex-start;
-  background: rgb(69, 81, 88);
+  background: rgb(0, 23, 39);
   border: 2px solid #aaa;
   border-radius: 10px;
   padding: 6px 10px;
@@ -194,7 +197,7 @@ body {
 
 .position-tag {
   font-size: 12px;
-  color: lightgray;
+  color: #e0e0e0; /* Higher contrast */
   margin-top: 2px;
 }
 
@@ -330,6 +333,11 @@ textarea {
   box-shadow: 0 0 8px gold;
 }
 
+/* .name-highlight::after {
+  content: "👆";
+  margin-left: 4px;
+} */
+
 /* Responsive tweaks */
 @media screen and (max-width: 1000px) {
   .table-outer-ring {
@@ -360,3 +368,63 @@ textarea {
   }
 }
 
+.action-flash {
+  font-weight: bold;
+  color: gold;
+  background-color: rgba(0, 0, 0, 0.7);
+  /* padding: 2px 4px; */
+  margin-top: 4px;
+  border-radius: 6px;
+  animation: fadeout 1s ease-in-out forwards;
+}
+
+@keyframes fadeout {
+  0% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+.button-chip {
+  width: 24px;
+  height: 24px;
+  background-color: white;
+  color: black;
+  font-weight: bold;
+  font-size: 14px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  z-index: 10;
+  border: 1px solid black;
+}
+
+
+/* Example positioning */
+.button-chip-4  { top: 30%;  left: 65%; }  /* top-left */
+.button-chip-5  { top: 55%;  left:80%; }  /* bottom-right */
+.button-chip-1  { top: 75%;  left:30%; }  /* top-right */
+
+
+.button-chip-0  { top: 78%; left: 40%; }  /* bottom-center (hero’s seat) */
+
+.button-chip-2  { top: 50%;  left: 20%; } /* mid-right */
+.button-chip-3  { top: 30%;  left:30%; }  /* bottom-right */
+.button-chip-6  { top: 50%;  left: 20%; }   /* mid-left */
+.button-chip-7  { top: -10%; left: 50%; }  /* top-center (for 4-8 players) */
+
+.position-tag {
+  font-weight: bold;
+  color: white;
+  background-color: #444;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  margin-top: 4px;
+}
