@@ -21,6 +21,16 @@ const seatLayoutMap = {
   7: [4, 3, 2, 1, 0, 6, 5],
 };
 
+const chipTagPositions = {
+  0: { top: 82, left: 50 },
+  1: { top: 80, left: 28 },
+  2: { top: 55, left: 20 },
+  3: { top: 32, left: 28 },
+  4: { top: 32, left: 72 },
+  5: { top: 55, left: 80 },
+  6: { top: 80, left: 72 },
+  7: { top: 26, left: 25 },
+};
 
 const stages = ["preflop", "flop", "turn", "river", "showdown"];
 
@@ -46,6 +56,10 @@ export default function PokerTable() {
   const [currentActionIndex, setCurrentActionIndex] = useState(0);
   const [visibleBets, setVisibleBets] = useState({});
   const [flashAction, setFlashAction] = useState([]); // { player, action, id }
+  const [winner, setWinner] = useState(null);  // The winner's name
+  const [chipAnimations, setChipAnimations] = useState([]);  // Store chip animation data
+  const [stageBets, setStageBets] = useState({});
+
 
 
   const parsedHand = hands[currentHandIndex] || null;
@@ -79,6 +93,124 @@ export default function PokerTable() {
 
     return null;
   }
+
+
+  function handleNext() {
+    if (!parsedHand) return;
+    const acts = parsedHand.actions[currentStage] || [];
+
+    // Store current bets in stageBets before moving to the next stage
+    if (currentStage !== "showdown") {
+      setStageBets((prevBets) => ({
+        ...prevBets,
+        [currentStage]: visibleBets, // Store the bets for the current stage
+      }));
+    }
+
+    // Neutral → first real action
+    if (currentActionIndex === -1) {
+      const first = getFirstActionIndex(currentStage);
+      if (first < acts.length) {
+        const action = acts[first];
+        setVisibleBets(updateVisibleBets(currentStage, first));
+        setCurrentActionIndex(first);
+
+        if (action && action.action !== "posts") {
+          const flashId = Date.now(); // unique ID
+          setFlashAction({ player: action.player, action: action.action, id: flashId });
+
+          setTimeout(() => {
+            setFlashAction((current) => current?.id === flashId ? null : current);
+          }, 1000);
+        }
+      } else {
+        setCurrentActionIndex(first);
+      }
+      return;
+    }
+
+    // Step inside current street
+    let idx = currentActionIndex + 1;
+    while (idx < acts.length && acts[idx].action === "posts") idx++;
+
+    if (idx < acts.length) {
+      const action = acts[idx];
+      setVisibleBets(updateVisibleBets(currentStage, idx));
+      setCurrentActionIndex(idx);
+
+      if (action.action !== "posts") {
+        const flashId = Date.now();
+        setFlashAction({ player: action.player, action: action.action, id: flashId });
+
+        setTimeout(() => {
+          setFlashAction((current) => current?.id === flashId ? null : current);
+        }, 1000);
+      }
+
+      return;
+    }
+
+    // Move to next street
+    const nextIdx = stages.indexOf(currentStage) + 1;
+    if (nextIdx < stages.length) {
+      setCurrentStage(stages[nextIdx]);
+      setCurrentActionIndex(-1);
+      setVisibleBets({});
+    }
+  }
+
+
+  function handlePrev() {
+    if (!parsedHand) return;
+    const actions = parsedHand.actions[currentStage] || [];
+
+    // First real action → neutral
+    if (currentActionIndex === getFirstActionIndex(currentStage)) {
+      setCurrentActionIndex(-1);
+      setVisibleBets(withBlinds()); // Keep SB + BB visible in pre-flop
+      return;
+    }
+
+    // Step backward inside the same street
+    let newIndex = currentActionIndex - 1;
+    while (newIndex >= 0 && actions[newIndex].action === "posts") newIndex--;
+
+    if (newIndex >= 0) {
+      const a = actions[newIndex];
+      setVisibleBets(updateVisibleBets(currentStage, newIndex));
+      setCurrentActionIndex(newIndex);
+      return;
+    }
+
+    // Move to previous street
+    const prevStageIdx = stages.indexOf(currentStage) - 1;
+    for (let i = prevStageIdx; i >= 0; i--) {
+      const prevStage = stages[i];
+      const prevActions = parsedHand.actions[prevStage] || [];
+      const lastRealIdx = [...prevActions].map((a, idx) => ({ a, idx }))
+        .reverse().find(item => item.a.action !== "posts");
+
+      if (lastRealIdx) {
+        const { a, idx } = lastRealIdx;
+        setCurrentStage(prevStage);
+        setCurrentActionIndex(idx);
+
+        // Restore the previous bets for this stage
+        if (stageBets[prevStage]) {
+          setVisibleBets(stageBets[prevStage]); // Restore bets from stageBets
+        }
+        return;
+      }
+    }
+
+    // Fully rewound
+    setCurrentStage("preflop");
+    setCurrentActionIndex(-1);
+    setVisibleBets(withBlinds());
+  }
+
+
+
 
   function contributionSoFar(hand, untilStreet, untilIdx, player) {
     if (!hand) return 0;
@@ -154,61 +286,7 @@ export default function PokerTable() {
     return out;                                // { playerName: totalPosted }
   }, [parsedHand]);
 
-  function handleNext() {
-    if (!parsedHand) return;
-    const acts = parsedHand.actions[currentStage] || [];
 
-    // Neutral → first real action
-    if (currentActionIndex === -1) {
-      const first = getFirstActionIndex(currentStage);
-      if (first < acts.length) {
-        const action = acts[first];
-        setVisibleBets(updateVisibleBets(currentStage, first));
-        setCurrentActionIndex(first);
-
-        if (action && action.action !== "posts") {
-          const flashId = Date.now(); // unique ID
-          setFlashAction({ player: action.player, action: action.action, id: flashId });
-
-          setTimeout(() => {
-            setFlashAction((current) => current?.id === flashId ? null : current);
-          }, 1000);
-        }
-      } else {
-        setCurrentActionIndex(first);
-      }
-      return;
-    }
-
-    // Step inside current street
-    let idx = currentActionIndex + 1;
-    while (idx < acts.length && acts[idx].action === "posts") idx++;
-
-    if (idx < acts.length) {
-      const action = acts[idx];
-      setVisibleBets(updateVisibleBets(currentStage, idx));
-      setCurrentActionIndex(idx);
-
-      if (action.action !== "posts") {
-        const flashId = Date.now();
-        setFlashAction({ player: action.player, action: action.action, id: flashId });
-
-        setTimeout(() => {
-          setFlashAction((current) => current?.id === flashId ? null : current);
-        }, 1000);
-      }
-
-      return;
-    }
-
-    // Move to next street
-    const nextIdx = stages.indexOf(currentStage) + 1;
-    if (nextIdx < stages.length) {
-      setCurrentStage(stages[nextIdx]);
-      setCurrentActionIndex(-1);
-      setVisibleBets({});
-    }
-  }
 
   function getFirstActionIndex(stage){
     const acts = parsedHand?.actions[stage] || [];
@@ -241,50 +319,7 @@ export default function PokerTable() {
 
 
 
-  function handlePrev() {
-    if (!parsedHand) return;
-    const actions = parsedHand.actions[currentStage] || [];
 
-    /* first real action → neutral */
-    if (currentActionIndex === getFirstActionIndex(currentStage)) {
-      setCurrentActionIndex(-1);
-      setVisibleBets(withBlinds());      // keep SB + BB visible in pre-flop
-      return;
-    }
-
-    /* step backward inside the same street */
-    let newIndex = currentActionIndex - 1;
-    while (newIndex >= 0 && actions[newIndex].action === "posts") newIndex--;
-
-    if (newIndex >= 0) {
-      const a = actions[newIndex];
-      setVisibleBets(updateVisibleBets(currentStage, newIndex));
-      setCurrentActionIndex(newIndex);
-      return;
-    }
-
-    /* move to previous street */
-    const prevStageIdx = stages.indexOf(currentStage) - 1;
-    for (let i = prevStageIdx; i >= 0; i--) {
-      const prevStage = stages[i];
-      const prevActions = parsedHand.actions[prevStage] || [];
-      const lastRealIdx = [...prevActions].map((a, idx) => ({ a, idx }))
-        .reverse().find(item => item.a.action !== "posts");
-
-      if (lastRealIdx) {
-        const { a, idx } = lastRealIdx;
-        setCurrentStage(prevStage);
-        setCurrentActionIndex(idx);
-        setVisibleBets(updateVisibleBets(prevStage, idx));
-        return;
-      }
-    }
-
-    /* fully rewound */
-    setCurrentStage("preflop");
-    setCurrentActionIndex(-1);
-    setVisibleBets(withBlinds());
-  }
 
   function hasPlayerFolded(playerName) {
     if (!parsedHand) return false;
@@ -341,12 +376,35 @@ export default function PokerTable() {
   },[parsedHand]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Date.now();
-      setFlashActions((prev) => prev.filter((a) => now - a.timestamp < 1000));
-    }, 100); // check every 100ms
-    return () => clearInterval(interval);
-  }, []);
+    if (!parsedHand) return;
+
+    // Check if the hand is over (showdown or no players left)
+    if (isHandOver()) {
+      const winnerName = getWinnerName();
+      setWinner(winnerName);
+
+      if (winnerName) {
+        // Determine winner's seat
+        const rotatedPlayers = getRotatedPlayers();
+        const winnerPlayer = rotatedPlayers.find(p => p.name === winnerName);
+        const winnerSeat = winnerPlayer ? winnerPlayer.visualSeat : null;
+
+        // Calculate the total pot
+        const totalPot = calculateCurrentPot();
+
+        // Set visibleBets to show the total pot in front of the winner's seat
+        setVisibleBets({ [winnerName]: totalPot });
+
+        // Optionally: You can reset the chip animations now that the chips no longer animate.
+        // setChipAnimations([]);  // No need to animate anymore, so you can clear this state
+      }
+    }
+  }, [currentStage, visibleBets, dynamicPlayers]);
+
+  useEffect(() => {
+    setChipAnimations([]);
+    setWinner(null);
+  }, [currentHandIndex]);
 
   function getVisibleCards(){
     if(!parsedHand) return [];
@@ -365,12 +423,9 @@ export default function PokerTable() {
   function calculateCurrentPot() {
     if (!parsedHand) return 0;
 
-    // start with antes
     let pot = parsedHand.anteTotal || 0;
 
-    /* -----------------------------------------------------------
-    * 👉  Always add SB + BB right away (even in the neutral state)
-    * ----------------------------------------------------------- */
+    // Add SB and BB posts directly (even in the neutral state)
     if (parsedHand.actions?.preflop) {
       const sb = parsedHand.actions.preflop.find(
         a => a.action === "posts" && a.amount === parsedHand.bigBlind / 2
@@ -382,17 +437,12 @@ export default function PokerTable() {
       if (bb) pot += bb.amount;
     }
 
-    /* If we are still in the neutral state of the pre-flop street
-      (-1 means no real action yet) we’re done – the pot is just
-      antes + SB + BB.  */
+    // If we're still in the pre-flop neutral state, don't add more to the pot
     if (currentStage === "preflop" && currentActionIndex === -1) {
       return pot;
     }
 
-    /* -----------------------------------------------------------
-    * Everything below is unchanged: we walk through the streets
-    * and add bets, calls and *increments* of raises.
-    * ----------------------------------------------------------- */
+    // Add other bets, calls, and raise increments
     const order = ["preflop", "flop", "turn", "river"];
     for (const st of order) {
       const acts = parsedHand.actions[st] || [];
@@ -419,11 +469,13 @@ export default function PokerTable() {
         }
       }
 
-      if (isCurrent) break;   // don’t look past the street we’re on
+      if (isCurrent) break;   // Don’t look past the street we’re on
     }
 
     return pot;
   }
+
+
 
   function calculateAnte() {
     if (!parsedHand) return 0;           // safety
@@ -528,6 +580,26 @@ function getRotatedPlayers() {
 
         <div className="table-outer-ring">
           <div className={"table"}>
+            {chipAnimations.map((chip, index) => (
+              <div
+                key={index}
+                className={`chip-animation chip-${chip.player}`}
+                style={{
+                  position: "absolute",
+                  top: `${chip.startTop}%`,  // Start position
+                  left: `${chip.startLeft}%`,  
+                  opacity: 1,
+                  transform: "none", // Override transform styles from CSS
+                  transition: `top 2s ease-out, left 2s ease-out, opacity 2s ease-out`, // Transition for smooth animation
+                  transitionDelay: `${chip.delay}s`, // Staggered animation
+                  zIndex: 100 + index, // Ensure chips are stacked correctly
+                }}
+              >
+                <img src={chipImg} alt="chip" />
+                <span>{chip.amount} BB</span>
+              </div>
+            ))}
+
             {getRotatedPlayers().map((player, visualIndex) => {
               const currentAction = parsedHand?.actions[currentStage]?.[currentActionIndex];
               const isActing = currentAction?.player === player.name;

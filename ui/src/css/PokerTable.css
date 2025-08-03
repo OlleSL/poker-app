@@ -428,3 +428,44 @@ textarea {
   font-size: 0.7rem;
   margin-top: 4px;
 }
+
+.chip-animation {
+  position: absolute;
+  top: var(--start-y);
+  left: var(--start-x);
+  animation: moveChips 1s ease-out forwards;
+  z-index: 10;
+}
+
+@keyframes move-to-winner {
+  0% {
+    transform: scale(1) translate(0, 0);  /* Initial position (start at the player's seat) */
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5) translate(calc(100px * var(--winner-position)), 0);  /* Move to winner's seat */
+    opacity: 0;
+  }
+}
+
+.chip-animation {
+  position: absolute;
+  z-index: 10;
+  transition: all 0.3s ease-in-out;
+}
+
+.chip-animation img {
+  width: 30px;  /* Adjust the size of the chip image */
+}
+
+.chip-animation span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 12px;
+  color: #fff;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.7);
+} 
+
