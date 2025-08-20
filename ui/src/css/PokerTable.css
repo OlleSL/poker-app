@@ -410,13 +410,10 @@ textarea {
 .button-chip-4  { top: 30%;  left: 65%; }  /* top-left */
 .button-chip-5  { top: 55%;  left:80%; }  /* bottom-right */
 .button-chip-1  { top: 75%;  left:30%; }  /* top-right */
-
-
 .button-chip-0  { top: 78%; left: 40%; }  /* bottom-center (hero’s seat) */
-
-.button-chip-2  { top: 50%;  left: 20%; } /* mid-right */
+.button-chip-2  { top: 45%;  left: 18%; } /* mid-right */
 .button-chip-3  { top: 30%;  left:30%; }  /* bottom-right */
-.button-chip-6  { top: 50%;  left: 20%; }   /* mid-left */
+.button-chip-6  { top: 78%;  left: 65%; }   /* bottom right real */
 .button-chip-7  { top: -10%; left: 50%; }  /* top-center (for 4-8 players) */
 
 .position-tag {
