@@ -875,7 +875,6 @@ function getRotatedPlayers() {
                 </span>
               )}
             </div>
-
           </div>
         </div>
 
