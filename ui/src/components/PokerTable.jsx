@@ -164,6 +164,9 @@ export default function PokerTable() {
   const [currentStage, setCurrentStage] = useState("preflop");
   const [currentActionIndex, setCurrentActionIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showPaste, setShowPaste] = useState(false);
+  const [pasteText, setPasteText] = useState("");
+
 
   // award flow state
   const [visibleBets, setVisibleBets] = useState({});
@@ -177,29 +180,100 @@ export default function PokerTable() {
 
   /* Web Worker setup for parsing */
   const workerRef = useRef(null);
+
   useEffect(() => {
     try {
-      workerRef.current = new Worker(workerUrl, { type: "module" });
+      const w = new Worker(workerUrl, { type: "module" });
+      w.onerror = (e) => {
+        console.error("Parser worker error:", e?.message || e);
+        // disable worker so we fall back to sync parser
+        workerRef.current = null;
+      };
+      workerRef.current = w;
     } catch {
       workerRef.current = null; // fallback will be sync parsing
     }
     return () => workerRef.current?.terminate();
   }, []);
 
+  function handlePasteSubmit() {
+    const input = (pasteText || "").replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
+    if (!input.trim()) {
+      alert("Paste hand history text first.");
+      return;
+    }
+    handlePaste(input);
+    setShowPaste(false);
+  }
+
+
   function handlePaste(text) {
+    const input = (text || "").replace(/^\uFEFF/, ""); // strip BOM if present
+    if (!input.trim()) {
+      alert("No text to parse.");
+      return;
+    }
+
+    // prefer worker, but fall back if disabled or errors
     if (workerRef.current) {
       workerRef.current.onmessage = (e) => {
-        setHands(e.data || []);
+        const parsed = Array.isArray(e.data) ? e.data : [];
+        console.log("Worker parsed hands:", parsed.length);
+        setHands(parsed);
         setCurrentHandIndex(0);
+        if (parsed.length === 0) {
+          alert("No hands found in file. Is this the correct hand-history format?");
+        }
       };
-      workerRef.current.postMessage(text);
-    } else {
-      // Fallback: sync parse on main thread if worker unavailable
-      const parsed = parseRedDragonHands(text);
-      setHands(parsed);
-      setCurrentHandIndex(0);
+      workerRef.current.postMessage(input);
+      return;
+    }
+
+    // fallback: sync
+    const parsed = parseRedDragonHands(input);
+    console.log("Sync parsed hands:", parsed.length);
+    setHands(parsed);
+    setCurrentHandIndex(0);
+    if (parsed.length === 0) {
+      alert("No hands found in file. Is this the correct hand-history format?");
     }
   }
+
+
+  // NEW: load a .txt file, normalize newlines, then reuse handlePaste
+  function handleFileChange(e) {
+    const inputEl = e.target;
+    const file = inputEl.files && inputEl.files[0];
+    if (!file) return;
+
+    // Don't hard-block on extension; warn but proceed
+    const isText = (file.type || "").startsWith("text");
+    const nameLooksOk = /\.((txt|log)|handhistory)$/i.test(file.name);
+    if (!isText && !nameLooksOk) {
+      console.warn("File may not be plain text; attempting to read anyway.");
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const raw = typeof reader.result === "string" ? reader.result : "";
+      // Strip BOM and normalize CRLF -> LF so parser sees consistent text
+      const normalized = raw.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
+      if (!normalized.trim()) {
+        alert("File appears empty or unreadable.");
+        inputEl.value = ""; // allow re-selecting the same file
+        return;
+      }
+      handlePaste(normalized); // reuse your existing flow (worker/sync)
+      inputEl.value = ""; // let onChange fire again if user picks same file
+    };
+    reader.onerror = (err) => {
+      console.error("FileReader error:", err);
+      alert("Could not read file. Try another file?");
+      inputEl.value = "";
+    };
+    reader.readAsText(file);
+  }
+
 
   /* Precompute snapshots for all (stage, idx) once per hand */
   const snapshotTable = useMemo(() => {
@@ -245,6 +319,7 @@ export default function PokerTable() {
   /* autoplay with transition (keeps UI responsive) */
   const [, startTransition] = useTransition();
   const playTimer = useRef(null);
+  const fileInputRef = useRef(null);
   useEffect(() => {
     if (!isPlaying) {
       if (playTimer.current) clearTimeout(playTimer.current);
@@ -623,19 +698,80 @@ export default function PokerTable() {
     <div className="poker-wrapper">
       <div className="table-container">
         <div className="table-heading">
-          <h1 className="title">Hand Replayer</h1>
-          <textarea
-            rows={8}
-            cols={80}
-            placeholder="Paste hand history here..."
-            onChange={(e) => handlePaste(e.target.value)}
-            style={{
-              marginTop: "1rem",
-              padding: "0.5rem",
-              fontFamily: "monospace",
-              width: "100%",
-            }}
-          />
+          {/* <h1 className="title">Hand Replayer</h1> */}
+
+          {/* NEW: unified uploader grid */}
+          <div className="uploader-grid">
+            {/* Paste */}
+            <button
+              type="button"
+              className="uploader-card"
+              onClick={() => setShowPaste((s) => !s)}
+              title="Paste hand history"
+              aria-label="Paste hand history"
+            >
+              <div className="uploader-title">Paste hand history</div>
+              <div className="uploader-sub">Paste text from your clipboard</div>
+            </button>
+
+            {/* Browse (hidden input triggered) */}
+            <button
+              type="button"
+              className="uploader-card"
+              onClick={() => fileInputRef.current?.click()}
+              title="Upload hand history"
+              aria-label="Upload hand history"
+            >
+              <div className="uploader-title">Upload hand history</div>
+              <div className="uploader-sub">Choose a .txt or .log file</div>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".txt,.log,.handhistory,text/plain"
+              onChange={handleFileChange}
+              style={{ display: "none" }}
+            />
+
+            {/* Drag & Drop */}
+            <button
+              type="button"
+              className="uploader-card"
+              title="Drop hand history"
+              aria-label="Drop hand history"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const f = e.dataTransfer.files && e.dataTransfer.files[0];
+                if (!f) return;
+                const fakeEvent = { target: { files: [f], value: "" } };
+                handleFileChange(fakeEvent);
+              }}
+            >
+              <div className="uploader-title">Drop hand history</div>
+              <div className="uploader-sub">Drag a .txt or .log file here</div>
+            </button>
+          </div>
+
+          <div style={{ width: "var(--table-w)", maxWidth: "min(90vw, var(--table-w))", margin: "px auto 0", fontSize: 12, color: "#ddd", textAlign: "center" }}>
+            Supported: Red Dragon / text exports (.txt, .log). We’ll auto-detect line endings and BOM.
+          </div>
+
+          {/* collapsible paste panel */}
+          {showPaste && (
+            <div className="paste-panel">
+              <textarea
+                rows={8}
+                placeholder="Paste hand history here…"
+                value={pasteText}
+                onChange={(e) => setPasteText(e.target.value)}
+              />
+              <div className="paste-actions">
+                <button className="step-button" onClick={handlePasteSubmit}>Load</button>
+                <button className="step-button" onClick={() => setShowPaste(false)}>Close</button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="table-outer-ring">
