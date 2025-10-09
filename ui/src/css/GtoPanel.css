@@ -1,0 +1,46 @@
+.gto-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.5);
+  display: flex; align-items: stretch; justify-content: flex-end;
+  z-index: 1000;
+}
+
+.gto-panel {
+  width: min(560px, 90vw);
+  height: 100%;
+  background: #121212; color: #eee;
+  border-left: 1px solid #333;
+  box-shadow: -8px 0 24px rgba(0,0,0,.4);
+  display: flex; flex-direction: column;
+  transform: translateX(100%);
+  animation: gto-slide-in 160ms ease-out forwards;
+}
+
+@keyframes gto-slide-in {
+  to { transform: translateX(0); }
+}
+
+.gto-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 12px; border-bottom: 1px solid #2a2a2a;
+  flex: 0 0 auto; /* sticky header */
+}
+
+.gto-title { font-weight: 600; }
+.gto-close { background: none; border: none; color: #ccc; font-size: 20px; cursor: pointer; }
+
+.gto-content {
+  flex: 1 1 auto;             /* take remaining height */
+  overflow: auto;             /* scroll only the content */
+  padding: 8px 0 16px;        /* room for image edges */
+}
+
+.gto-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  background: #000;
+}
+
+.gto-empty { padding: 16px; color: #bbb; }

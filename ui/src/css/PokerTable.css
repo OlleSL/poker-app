@@ -512,28 +512,6 @@ textarea {
 
 .cursor-pointer { cursor: pointer; }
 
-.paste-panel {
-  width: 90%;
-  max-width: 700px;
-  background: #2e2e2e;
-  border: 1px solid #aaa;
-  border-radius: 8px;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.paste-panel textarea {
-  width: 100%;
-  max-width: 100%;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  padding: 8px;
-  font-family: monospace;
-  resize: vertical;
-  min-height: 140px;
-}
 
 .paste-actions {
   display: flex;
@@ -548,7 +526,10 @@ textarea {
 }
 
 /* === Uploader tiles: centered to table width, identical sizes === */
-:root { --table-w: 800px; }
+:root {
+  --table-w: 800px;     /* matches your table width */
+  --paste-trim: 120px;  /* increase/decrease to taste */
+}
 
 .uploader-grid {
   width: var(--table-w);
@@ -602,9 +583,11 @@ textarea {
 
 /* Keep the paste panel aligned with the table width */
 .paste-panel {
-  width: var(--table-w);
-  max-width: min(90vw, var(--table-w));
-  margin: 0 auto;
+  width: calc(var(--table-w) - var(--paste-trim));
+  max-width: min(90vw, calc(var(--table-w) - var(--paste-trim)));
+  margin-left: 0;          /* anchor left */
+  margin-right: auto;      /* leave the extra space on the right */
+
   background: #2e2e2e;
   border: 1px solid #aaa;
   border-radius: 8px;
@@ -614,9 +597,19 @@ textarea {
   gap: 8px;
 }
 
+/* tune how much to trim from the right side */
+
+/* Make the paste textarea slightly narrower from the right */
+
+
+/* Optional: keep it nice on small screens */
+@media (max-width: 700px) {
+  :root { --paste-trim: 24px; }
+}
+
 .paste-panel textarea {
   width: 100%;
-  max-width: 100%;
+  box-sizing: border-box;
   border-radius: 6px;
   border: 1px solid #ccc;
   padding: 8px;

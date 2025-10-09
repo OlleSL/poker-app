@@ -9,6 +9,9 @@ import "../css/PokerTable.css";
 import avatar from "../assets/avatar.png";
 import chipImg from "../assets/chip.svg";
 import { parseRedDragonHands } from "../utils/parser"; // optional fallback (not used if worker is available)
+import { extractContext } from "../gto/context";
+import { GtoPanel } from "../components/GtoPanel";
+import { resolveRangeUrl } from "../gto/rangeIndex";
 
 // Web worker for parsing (Vite syntax)
 const workerUrl = new URL("../workers/parser.worker.js", import.meta.url);
@@ -166,6 +169,8 @@ export default function PokerTable() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showPaste, setShowPaste] = useState(false);
   const [pasteText, setPasteText] = useState("");
+  const [showGto, setShowGto] = useState(false);
+  const [gtoUrl, setGtoUrl] = useState(null);
 
 
   // award flow state
@@ -180,6 +185,17 @@ export default function PokerTable() {
 
   /* Web Worker setup for parsing */
   const workerRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!parsedHand) { setGtoUrl(null); return; }
+      const ctx = extractContext(parsedHand, "preflop"); // open ranges for now
+      const url = await resolveRangeUrl(ctx);
+      if (!cancelled) setGtoUrl(url);
+    })();
+    return () => { cancelled = true; };
+  }, [parsedHand]);
 
   useEffect(() => {
     try {
@@ -751,9 +767,9 @@ export default function PokerTable() {
               <div className="uploader-title">Drop hand history</div>
               <div className="uploader-sub">Drag a .txt or .log file here</div>
             </button>
-          </div>
+          </div> 
 
-          <div style={{ width: "var(--table-w)", maxWidth: "min(90vw, var(--table-w))", margin: "px auto 0", fontSize: 12, color: "#ddd", textAlign: "center" }}>
+          <div style={{ width: "var(--table-w)", maxWidth: "min(90vw, var(--table-w))", margin: "1px auto 0", fontSize: 12, color: "#ddd", textAlign: "center" }}>
             Supported: Red Dragon / text exports (.txt, .log). We’ll auto-detect line endings and BOM.
           </div>
 
@@ -917,6 +933,13 @@ export default function PokerTable() {
             <button onClick={handleNext} className="step-button">
               ➡️
             </button>
+            <button
+              onClick={() => setShowGto(s => !s)}
+              className="step-button"
+              title={gtoUrl ? "Show GTO panel" : "No matching range yet"}
+            >
+              📊 GTO
+            </button>
           </div>
 
           <div className="hand-controls">
@@ -946,6 +969,8 @@ export default function PokerTable() {
           </div>
         </div>
       </div>
+    <GtoPanel open={showGto} onClose={()=>setShowGto(false)} url={gtoUrl} />
     </div>
+
   );
 }
