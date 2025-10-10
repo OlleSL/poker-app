@@ -62,9 +62,7 @@ body {
 .chip-tag-6 { top:  80%; left:  72%; }
 .chip-tag-7 { top:  26%; left: 25%; }
 
-
 /* seat-based tag positions — tweak until it looks perfect */
-
 
 .seat {
   position: absolute;
@@ -405,7 +403,6 @@ textarea {
   border: 1px solid black;
 }
 
-
 /* Example positioning */
 .button-chip-4  { top: 30%;  left: 65%; }  /* top-left */
 .button-chip-5  { top: 55%;  left:80%; }  /* bottom-right */
@@ -512,7 +509,6 @@ textarea {
 
 .cursor-pointer { cursor: pointer; }
 
-
 .paste-actions {
   display: flex;
   gap: 8px;
@@ -587,7 +583,6 @@ textarea {
   max-width: min(90vw, calc(var(--table-w) - var(--paste-trim)));
   margin-left: 0;          /* anchor left */
   margin-right: auto;      /* leave the extra space on the right */
-
   background: #2e2e2e;
   border: 1px solid #aaa;
   border-radius: 8px;
@@ -596,11 +591,6 @@ textarea {
   flex-direction: column;
   gap: 8px;
 }
-
-/* tune how much to trim from the right side */
-
-/* Make the paste textarea slightly narrower from the right */
-
 
 /* Optional: keep it nice on small screens */
 @media (max-width: 700px) {
@@ -630,4 +620,212 @@ textarea {
     grid-template-columns: 1fr;
     grid-auto-rows: 100px;
   }
+}
+
+/* ---------- Showdown winner banner ---------- */
+.showdown-banner {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 90px;
+  background: rgba(20, 20, 20, 0.9);
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 10px 14px;
+  min-width: 240px;
+  text-align: center;
+  box-shadow: 0 6px 22px rgba(0,0,0,0.35);
+  z-index: 6;
+}
+
+.showdown-title {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 6px;
+  letter-spacing: 0.2px;
+}
+
+.showdown-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 13px;
+}
+
+.showdown-list li + li { margin-top: 4px; }
+
+/* ---------- Hand ranking cheat-sheet (bottom-left) ---------- */
+.hand-ranks {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  background: rgba(16,16,20, 0.92);
+  color: #e9e9ef;
+  border: 1px solid #2a2a36;
+  border-radius: 12px;
+  padding: 10px 12px;
+  width: 200px;
+  z-index: 7;
+  backdrop-filter: blur(2px);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+}
+
+.hand-ranks__title {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 6px;
+  letter-spacing: 0.2px;
+}
+
+.hand-ranks__list {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 12px;
+  line-height: 1.25rem;
+}
+
+/* HandRanks v2 — examples, tooltips, tie-breakers */
+.hand-ranks {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  background: rgba(16,16,20, 0.92);
+  color: #e9e9ef;
+  border: 1px solid #2a2a36;
+  border-radius: 12px;
+  padding: 10px 12px;
+  width: 240px;               /* a bit wider to fit examples */
+  z-index: 7;
+  backdrop-filter: blur(2px);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+}
+
+.hand-ranks__hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.hand-ranks__title {
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.2px;
+}
+
+.hand-ranks__mode {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.hr-mode-btn {
+  background: #1e1e26;
+  color: #cfcfe6;
+  border: 1px solid #3a3a48;
+  border-radius: 8px;
+  font-size: 11px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.hr-mode-btn.is-active {
+  background: #2a2a38;
+  border-color: #6a6ab0;
+  color: #fff;
+}
+
+.hand-ranks__list {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 12px;
+  line-height: 1.25rem;
+}
+
+.hr-item + .hr-item { margin-top: 4px; }
+
+.hr-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.hr-name {
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.hr-desc {
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+.hr-example {
+  display: inline-flex;
+  gap: 2px;
+  transform: translateY(1px);
+}
+
+.hr-mini-card {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 18px;
+  font-weight: 800;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0 5px 0 4px;
+  border-radius: 4px;
+  background: #0e0e15;
+  border: 1px solid #2a2a36;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03);
+}
+
+.hr-mini-card .hr-suit {
+  margin-left: 1px;
+  font-size: 10px;
+  opacity: 0.95;
+}
+
+.hr-tip {
+  font-size: 10px;
+  opacity: 0.85;
+  margin-top: 2px;
+  padding-left: 2px;
+}
+
+.hr-foot {
+  margin-top: 8px;
+  border-top: 1px solid #2a2a36;
+  padding-top: 6px;
+}
+
+.hr-foot-title {
+  font-weight: 800;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.hr-foot-list {
+  list-style: disc;
+  padding-left: 18px;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.2rem;
+}
+
+@media (max-width: 700px) {
+  .hand-ranks { width: 210px; }
+  .hr-mini-card { min-width: 20px; height: 16px; font-size: 10px; }
+}
+
+.hr-mini-card { letter-spacing: -0.5px; }
+.hr-mini-card .hr-suit {
+  margin-left: 2px;
+  font-size: 0.9em;
+  position: relative;
+  top: -1px;   /* sit the suit a touch higher */
+  opacity: 0.95;
 }

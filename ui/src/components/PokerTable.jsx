@@ -15,6 +15,7 @@ const PLACEHOLDER_POS = "BTN";
 const PLACEHOLDER_BB = 30;
 // Web worker for parsing (Vite syntax)
 const workerUrl = new URL("../workers/parser.worker.js", import.meta.url);
+import HandRanks from "../components/HandRanks";
 
 /* ───────────────────── Helpers & constants ───────────────────── */
 
@@ -317,6 +318,13 @@ export default function PokerTable() {
       buildSnapshot(parsedHand, currentStage, currentActionIndex),
     [snapshotTable, parsedHand, currentStage, currentActionIndex]
   );
+
+  // Shows winners as soon as we reach Showdown (or when award is showing)
+  const winnersAtShowdown = useMemo(() => {
+    if (!parsedHand) return [];
+    const winners = extractWinnersFromHand(parsedHand) || [];
+    return winners;
+  }, [parsedHand]);
 
   /* Initial posts (SB/BB/straddles + mark antes) */
   const initialPosts = useMemo(() => {
@@ -880,6 +888,21 @@ export default function PokerTable() {
                 <React.Fragment key={i}>{renderCard(card)}</React.Fragment>
               ))}
             </div>
+            {(currentStage === "showdown" || awardPhase === "show") && winnersAtShowdown.length > 0 && (
+              <div className="showdown-banner" role="status" aria-live="polite">
+                <div className="showdown-title">Showdown Result</div>
+                <ul className="showdown-list">
+                  {winnersAtShowdown.map((w, i) => (
+                    <li key={i}>
+                      <strong>{w.player}</strong>
+                      {Number.isFinite(+w.amount) ? (
+                        <> won {parsedHand?.bigBlind ? (w.amount / parsedHand.bigBlind).toFixed(2) + " BB" : w.amount + " chips"}</>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {parsedHand && (
               <div
@@ -973,15 +996,18 @@ export default function PokerTable() {
               ⏭️
             </button>
           </div>
-        </div>
+        </div> 
       </div>
-<GtoPanel
-  open={showGto}
-  onClose={() => setShowGto(false)}
-  url={gtoUrl}
-  pos={PLACEHOLDER_POS}
-  effBB={PLACEHOLDER_BB}
-/>
+      <GtoPanel
+        open={showGto}
+        onClose={() => setShowGto(false)}
+        url={gtoUrl}
+        inferredPosition={PLACEHOLDER_POS}
+        inferredBb={PLACEHOLDER_BB}
+      />
+      {/* Always-on hand ranking helper (bottom-left) */}
+      <HandRanks />
+
     </div>
 
   );

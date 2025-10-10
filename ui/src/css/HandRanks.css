@@ -1,0 +1,128 @@
+.handranks {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  width: 280px;
+  max-height: 70vh;
+  overflow: auto;
+  background: #101418;
+  color: #e8f0f7;
+  border: 1px solid #2a3440;
+  border-radius: 10px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.35);
+  padding: 12px 12px 10px;
+  z-index: 9999;
+}
+
+.handranks__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.handranks__title {
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.handranks__toggles {
+  display: inline-flex;
+  background: #0b0f13;
+  border: 1px solid #1d2630;
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.hr-tab {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #b8c6d8;
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.hr-tab.is-active {
+  background: #16202a;
+  color: #fff;
+}
+
+.handranks__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.handranks__item {
+  background: #0e1116;
+  border: 1px solid #1d2630;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.handranks__name {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.handranks__cards {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  padding: 6px 0;
+}
+
+.hr-card {
+  display: inline-block;
+  border-radius: 4px;
+  padding: 2px 6px;
+  background: #111922;
+  border: 1px solid #223041;
+  color: #e8f0f7; /* default for ♠/♣ */
+}
+
+/* suit coloring via data attribute */
+.hr-card[data-suit="h"],
+.hr-card[data-suit="d"] {
+  color: #ff6b6b;
+}
+
+.handranks__note {
+  font-size: 12px;
+  opacity: .85;
+}
+
+.handranks__footer {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #1d2630;
+}
+
+.handranks__tipsTitle {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.handranks__tips {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 12px;
+  opacity: .9;
+}
+
+/* simple mode list */
+.handranks__simple {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+.handranks__simple li {
+  line-height: 1.3;
+}
