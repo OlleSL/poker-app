@@ -126,3 +126,7 @@
 .handranks__simple li {
   line-height: 1.3;
 }
+
+@media (max-width: 1500px) {
+  .handranks {display: none;}
+}
