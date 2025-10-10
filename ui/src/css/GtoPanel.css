@@ -44,3 +44,81 @@
 }
 
 .gto-empty { padding: 16px; color: #bbb; }
+
+.gto-subtitle {
+  font-size: 12px;
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
+.gto-legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  opacity: 0.85;
+  padding: 6px 12px 0 12px;
+}
+
+.gto-legend .swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 6px;
+  border: 1px solid rgba(0,0,0,0.25);
+}
+
+.swatch-blue { background: #3b82f6; } /* blue = raise/open */
+.swatch-red  { background: #f37463; } /* red  = fold       */
+
+.legend-sep {
+  opacity: 0.5;
+}
+
+.gto-subtitle {
+  margin-top: 4px;
+  font-size: 12px;
+  opacity: 0.85;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.gto-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.legend-sep {
+  opacity: 0.6;
+  margin: 0 2px;
+}
+
+.gto-caption {
+  margin-top: 8px;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* Make the main title a bit larger */
+.gto-title {
+  font-size: 20px;       /* was ~16px; tweak as preferred (e.g., 22px) */
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Give the subtitle a little more breathing room */
+.gto-subtitle {
+  margin-top: 6px;       /* was 4px */
+  font-size: 13px;       /* was 12px */
+}
+
+/* Optional: slightly larger legend text too */
+.gto-legend {
+  font-size: 13px;       /* was 12px */
+}

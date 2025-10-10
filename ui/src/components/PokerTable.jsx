@@ -7,12 +7,12 @@ import React, {
 } from "react";
 import "../css/PokerTable.css";
 import avatar from "../assets/avatar.png";
-import chipImg from "../assets/chip.svg";
 import { parseRedDragonHands } from "../utils/parser"; // optional fallback (not used if worker is available)
-import { extractContext } from "../gto/context";
 import { GtoPanel } from "../components/GtoPanel";
-import { resolveRangeUrl } from "../gto/rangeIndex";
-
+// import { resolveOpenRfiUrl } from "../gto/resolveOpenRfi";
+const PLACEHOLDER_RANGE_URL = "ranges/Main/7max/open/BTN/30BB.png";
+const PLACEHOLDER_POS = "BTN";
+const PLACEHOLDER_BB = 30;
 // Web worker for parsing (Vite syntax)
 const workerUrl = new URL("../workers/parser.worker.js", import.meta.url);
 
@@ -170,8 +170,8 @@ export default function PokerTable() {
   const [showPaste, setShowPaste] = useState(false);
   const [pasteText, setPasteText] = useState("");
   const [showGto, setShowGto] = useState(false);
-  const [gtoUrl, setGtoUrl] = useState(null);
-
+  //const [gtoUrl, setGtoUrl] = useState(null);
+  const [gtoUrl, setGtoUrl] = useState(PLACEHOLDER_RANGE_URL);
 
   // award flow state
   const [visibleBets, setVisibleBets] = useState({});
@@ -186,16 +186,22 @@ export default function PokerTable() {
   /* Web Worker setup for parsing */
   const workerRef = useRef(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!parsedHand) { setGtoUrl(null); return; }
-      const ctx = extractContext(parsedHand, "preflop"); // open ranges for now
-      const url = await resolveRangeUrl(ctx);
-      if (!cancelled) setGtoUrl(url);
-    })();
-    return () => { cancelled = true; };
-  }, [parsedHand]);
+  // useEffect(() => {
+  //   let cancelled = false;
+  //   (async () => {
+  //     if (!parsedHand || currentStage !== "preflop") {
+  //       setGtoUrl(null);
+  //       return;
+  //     }
+  //     const url = await resolveOpenRfiUrl(parsedHand);
+  //     if (!cancelled) setGtoUrl(url);
+  //   })();
+  //   return () => { cancelled = true; };
+  //   // also recalc if preflop actions array identity changes
+  // }, [parsedHand, currentStage, parsedHand?.actions?.preflop]);
+  // useEffect(() => {
+  //   setGtoUrl(PLACEHOLDER_RANGE_URL);
+  // }, []);
 
   useEffect(() => {
     try {
@@ -969,7 +975,13 @@ export default function PokerTable() {
           </div>
         </div>
       </div>
-    <GtoPanel open={showGto} onClose={()=>setShowGto(false)} url={gtoUrl} />
+<GtoPanel
+  open={showGto}
+  onClose={() => setShowGto(false)}
+  url={gtoUrl}
+  pos={PLACEHOLDER_POS}
+  effBB={PLACEHOLDER_BB}
+/>
     </div>
 
   );
