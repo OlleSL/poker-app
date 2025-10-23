@@ -1007,8 +1007,6 @@ export default function PokerTable() {
       />
       {/* Always-on hand ranking helper (bottom-left) */}
       <HandRanks />
-
     </div>
-
   );
 }
