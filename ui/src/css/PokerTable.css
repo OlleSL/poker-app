@@ -636,7 +636,7 @@ textarea {
   min-width: 240px;
   text-align: center;
   box-shadow: 0 6px 22px rgba(0,0,0,0.35);
-  z-index: 6;
+  z-index: 12;
 }
 
 .showdown-title {

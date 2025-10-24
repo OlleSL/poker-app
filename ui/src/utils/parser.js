@@ -26,6 +26,10 @@ function parseSingleHand(rawText) {
     winner: null,
     totalPot: null,
     anteTotal: 0,
+    raw: rawText, // Store raw text for winner extraction
+    summaryLines: [], // Store summary section lines
+    winners: [], // Structured winner data
+    playerInvestments: {}, // Track how much each player invested
   };
 
   // Extract button seat
@@ -94,6 +98,21 @@ function parseSingleHand(rawText) {
         }
 
         hand.actions[street].push({ player, action, amount, raw: line });
+        
+        // Track player investments for net profit calculation
+        if (amount && (action === "bets" || action === "calls" || action === "raises")) {
+          if (!hand.playerInvestments[player]) {
+            hand.playerInvestments[player] = 0;
+          }
+          if (action === "raises") {
+            // For raises, amount is the total amount to call, so we need to track the increment
+            const currentInvestment = hand.playerInvestments[player];
+            const increment = amount - currentInvestment;
+            hand.playerInvestments[player] = amount;
+          } else {
+            hand.playerInvestments[player] += amount;
+          }
+        }
       }
     }
 
@@ -109,15 +128,60 @@ function parseSingleHand(rawText) {
         });
         hand.anteTotal += parseInt(amount);
         hand.antes.push({ player, amount: parseInt(amount) });
+        
+        // Track ante investments
+        if (!hand.playerInvestments[player]) {
+          hand.playerInvestments[player] = 0;
+        }
+        hand.playerInvestments[player] += parseInt(amount);
       }
     }
 
+    // Handle uncalled bet returns
+    if (line.includes("Uncalled bet")) {
+      const match = line.match(/Uncalled bet \((\d+)\) returned to (\w+)/);
+      if (match) {
+        const [, amount, player] = match;
+        const uncalledAmount = parseInt(amount);
+        // Reduce the player's investment by the uncalled amount
+        if (hand.playerInvestments[player]) {
+          hand.playerInvestments[player] -= uncalledAmount;
+        }
+      }
+    }
+
+    // Parse winner information - handle both "collected X from pot" and "collected (X)"
     if (line.includes("collected")) {
-      const match = line.match(/(\w+)\scollected\s(\d+)/);
+      // Match "bajkee collected 283986 from pot"
+      let match = line.match(/(\w+)\s+collected\s+([\d,]+)\s+from pot/);
       if (match) {
         hand.winner = match[1];
-        hand.totalPot = parseInt(match[2]);
+        hand.totalPot = parseInt(match[2].replace(/,/g, ''));
+        // Calculate net profit: collected amount - what they invested
+        const collectedAmount = parseInt(match[2].replace(/,/g, ''));
+        const playerName = match[1];
+        const investedAmount = hand.playerInvestments[playerName] || 0;
+        const netProfit = collectedAmount - investedAmount;
+        hand.winners.push({ player: playerName, amount: netProfit });
+      } else {
+        // Match "bajkee collected (27000)"
+        match = line.match(/(\w+)\s+collected\s*\(([\d,]+)\)/);
+        if (match) {
+          hand.winner = match[1];
+          hand.totalPot = parseInt(match[2].replace(/,/g, ''));
+          // Calculate net profit: collected amount - what they invested
+          const collectedAmount = parseInt(match[2].replace(/,/g, ''));
+          const playerName = match[1];
+          const investedAmount = hand.playerInvestments[playerName] || 0;
+          const netProfit = collectedAmount - investedAmount;
+          hand.winners.push({ player: playerName, amount: netProfit });
+        }
       }
+    }
+
+    // Store summary section lines for winner extraction
+    if (line.includes("*** SUMMARY ***") || hand.summaryLines.length > 0) {
+      hand.summaryLines.push(line);
     }
 
     if (line.startsWith("Seat")) {
@@ -175,14 +239,15 @@ function parseSingleHand(rawText) {
   }
 
   // Step 4: Assign real positions based on number of players
+  // Map positions relative to button (BTN) working backwards: BB, SB, BTN, CO, HJ, LJ, UTG
   const posMap = {
     2: ["SB", "BB"],
-    3: ["UTG", "SB", "BB"],
-    4: ["UTG", "BTN", "SB", "BB"],
-    5: ["UTG", "MP", "BTN", "SB", "BB"],
-    6: ["UTG", "MP", "CO", "BTN", "SB", "BB"],
-    7: ["UTG", "MP", "HJ", "CO", "BTN", "SB", "BB"],
-    8: ["UTG", "UTG+1", "MP", "HJ", "CO", "BTN", "SB", "BB"],
+    3: ["BTN", "SB", "BB"],
+    4: ["CO", "BTN", "SB", "BB"],
+    5: ["HJ", "CO", "BTN", "SB", "BB"],           // 5-handed: HJ, CO, BTN, SB, BB
+    6: ["LJ", "HJ", "CO", "BTN", "SB", "BB"],     // 6-handed: LJ, HJ, CO, BTN, SB, BB  
+    7: ["UTG", "LJ", "HJ", "CO", "BTN", "SB", "BB"], // 7-handed: UTG, LJ, HJ, CO, BTN, SB, BB
+    8: ["UTG", "LJ", "HJ", "CO", "BTN", "SB", "BB"], // 8-handed: same as 7-handed
   };
 
   const positions = posMap[sortedPlayers.length] || [];

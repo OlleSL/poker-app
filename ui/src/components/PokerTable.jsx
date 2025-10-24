@@ -171,8 +171,7 @@ export default function PokerTable() {
   const [showPaste, setShowPaste] = useState(false);
   const [pasteText, setPasteText] = useState("");
   const [showGto, setShowGto] = useState(false);
-  //const [gtoUrl, setGtoUrl] = useState(null);
-  const [gtoUrl, setGtoUrl] = useState(PLACEHOLDER_RANGE_URL);
+  const [gtoUrl, setGtoUrl] = useState(null);
 
   // award flow state
   const [visibleBets, setVisibleBets] = useState({});
@@ -377,6 +376,12 @@ export default function PokerTable() {
     setIsPlaying(false);
   }, [parsedHand]);
 
+  /* Update GTO URL when hand, stage, or action index changes */
+  useEffect(() => {
+    const url = resolveGtoUrl(parsedHand);
+    setGtoUrl(url);
+  }, [parsedHand, currentStage, currentActionIndex]);
+
   /* Stop autoplay when showing the award */
   useEffect(() => {
     if (awardPhase === "show") setIsPlaying(false);
@@ -484,39 +489,87 @@ export default function PokerTable() {
 
   function extractWinnersFromHand(hand) {
     if (!hand) return [];
-    if (Array.isArray(hand.winners) && hand.winners.length) {
-      return hand.winners
-        .filter((w) => w && w.player && Number.isFinite(+w.amount))
-        .map((w) => ({ player: w.player, amount: +w.amount }));
+
+    console.log("extractWinnersFromHand - hand.winners:", hand.winners);
+    console.log("extractWinnersFromHand - hand.playerInvestments:", hand.playerInvestments);
+
+    // merge helper
+    const merged = {};
+    const add = (name, amt) => {
+      const player = String(name || "").trim();
+      const num = Number(String(amt || "").replace(/,/g, ""));
+      if (!player || !Number.isFinite(num)) return;
+      console.log("Adding winner:", player, "amount:", num);
+      merged[player] = num; // Set directly, don't add
+    };
+
+    // 1) Use any structured arrays first (if your parser set them)
+    if (Array.isArray(hand.winners) && hand.winners.length > 0) {
+      console.log("Using structured hand.winners data");
+      hand.winners.forEach(w => add(w?.player, w?.amount));
+      return Object.entries(merged).map(([player, amount]) => ({ player, amount }));
     }
-    if (Array.isArray(hand.collected) && hand.collected.length) {
-      return hand.collected
-        .filter((w) => w && w.player && Number.isFinite(+w.amount))
-        .map((w) => ({ player: w.player, amount: +w.amount }));
+    if (Array.isArray(hand.collected)) {
+      hand.collected.forEach(w => add(w?.player, w?.amount));
     }
-    if (Array.isArray(hand.results) && hand.results.length) {
-      return hand.results
-        .filter((r) => r && r.player && /won/i.test(r.result) && Number.isFinite(+r.amount))
-        .map((r) => ({ player: r.player, amount: +r.amount }));
+    if (Array.isArray(hand.results)) {
+      hand.results.forEach(r => {
+        if (r?.player && /won/i.test(String(r.result))) add(r.player, r?.amount);
+      });
     }
-    const lines = hand.summaryLines || hand.summary || hand.rawSummary || hand.raw || [];
-    const arr = Array.isArray(lines) ? lines : String(lines).split(/\r?\n/);
-    const winners = [];
-    const rxCollected = /^(.+?)\s+collected\s+(\d+)\s+from pot/i;
-    const rxSeatWon = /^Seat\s+\d+:\s*(.+?)\s.*\bwon\s*\((\d+)\)/i;
-    for (const line of arr) {
-      const m1 = line.match(rxCollected);
-      if (m1) {
-        winners.push({ player: m1[1].trim(), amount: +m1[2] });
-        continue;
+
+    // 2) Fall back to scanning whatever text field exists.
+    // Different parsers/workers use different keys; grab them all if present.
+    // (No duplicates risk; we merge above.)
+    const textCandidate =
+      [
+        hand.summaryLines,
+        hand.summary,
+        hand.rawSummary,
+        hand.raw,
+        hand.summaryText,
+        hand.text,
+        hand.original,
+        hand.handText,
+      ]
+        .filter(Boolean)
+        .map(v => (Array.isArray(v) ? v.join("\n") : String(v)))
+        .join("\n");
+
+    if (textCandidate) {
+      const lines = textCandidate.split(/\r?\n/);
+
+      // Matches examples like your HH:
+      // "bajkee collected 283986 from pot"
+      const rxCollectedFromPot = /^(.+?)\s+collected\s+([\d,]+)\s+from pot/i;
+
+      // "Seat 1: bajkee (button) showed [Ad Td] and won (283986)"
+      const rxSeatWon = /^Seat\s+\d+:\s*(.+?)\s.*\bwon\s*\(([\d,]+)\)/i;
+
+      // Some sites use: "Seat X: name ... collected (NNN)"
+      const rxSeatCollectedParen = /^Seat\s+\d+:\s*(.+?)\s.*\bcollected\s*\(([\d,]+)\)/i;
+
+      // Additional pattern for "collected (amount)" without "from pot"
+      const rxCollectedParen = /^(.+?)\s+collected\s*\(([\d,]+)\)/i;
+
+      for (const line of lines) {
+        let m = line.match(rxCollectedFromPot);
+        if (m) { add(m[1], m[2]); continue; }
+        m = line.match(rxSeatWon);
+        if (m) { add(m[1], m[2]); continue; }
+        m = line.match(rxSeatCollectedParen);
+        if (m) { add(m[1], m[2]); continue; }
+        m = line.match(rxCollectedParen);
+        if (m) { add(m[1], m[2]); continue; }
       }
-      const m2 = line.match(rxSeatWon);
-      if (m2) {
-        winners.push({ player: m2[1].trim(), amount: +m2[2] });
-      }
     }
-    return winners;
+
+    return Object.entries(merged)
+      .map(([player, amount]) => ({ player, amount }))
+      .sort((a, b) => b.amount - a.amount);
   }
+
+
 
   function remainingChipsLabel(player) {
     const bb = parsedHand?.bigBlind || 1;
@@ -533,16 +586,15 @@ export default function PokerTable() {
   }
 
   /* navigation / step handlers */
-
   function handleNext() {
     if (!parsedHand) return;
 
-    // award flow
+    // If banner is showing, this click applies payouts then clears tags
     if (awardPhase === "show") {
       setStackPayouts((prev) => {
         const copy = { ...prev };
         Object.entries(visibleBets || {}).forEach(([name, amt]) => {
-          copy[name] = (copy[name] || 0) + amt;
+          copy[name] = amt; // Set directly, don't add
         });
         return copy;
       });
@@ -553,12 +605,26 @@ export default function PokerTable() {
 
     const acts = parsedHand.actions[currentStage] || [];
 
-    // stash current stage bets before moving on
+    // ✅ Fast-path: already at showdown (acts usually empty) → on this click, show winners
+    if (currentStage === "showdown" && awardPhase === "none") {
+      let winners = extractWinnersFromHand(parsedHand);
+      if (winners.length) {
+        const vb = {};
+        for (const w of winners) {
+          vb[w.player] = w.amount; // Set directly, don't add
+        }
+        setVisibleBets(vb);
+        setAwardPhase("show"); // banner + chip tags appear now; next click applies
+      }
+      return; // ← important: don't fall through to neutral/step logic
+    }
+
+    // Stash current stage bets before moving on (not needed in showdown)
     if (currentStage !== "showdown") {
       setStageBets((prev) => ({ ...prev, [currentStage]: visibleBets }));
     }
 
-    // neutral → first action
+    // Neutral → first action on this street
     if (currentActionIndex === -1) {
       const first = getFirstActionIndex(currentStage);
       if (first < acts.length) {
@@ -574,12 +640,12 @@ export default function PokerTable() {
           }, 1000);
         }
       } else {
-        setCurrentActionIndex(first);
+        setCurrentActionIndex(first); // nothing on this street, but keep progress
       }
       return;
     }
 
-    // step within street
+    // Step within this street (skip "posts")
     let idx = currentActionIndex + 1;
     while (idx < acts.length && acts[idx].action === "posts") idx++;
     if (idx < acts.length) {
@@ -597,30 +663,32 @@ export default function PokerTable() {
       return;
     }
 
-    // advance street
+    // Advance to next street
     const nextIdx = stages.indexOf(currentStage) + 1;
     if (nextIdx < stages.length) {
-      setCurrentStage(stages[nextIdx]);
+      const nextStage = stages[nextIdx];
+      setCurrentStage(nextStage);
       setCurrentActionIndex(-1);
       setVisibleBets({});
     }
 
-    // if end reached, show award chips
+    // If we're past the last stage OR only one player remains, show award now
     const handEnded = nextIdx >= stages.length || getRemainingPlayers() <= 1;
     if (handEnded && awardPhase === "none") {
-      let winners = extractWinnersFromHand(parsedHand);
-      if (!winners.length) {
+      // Only use the old logic for non-showdown scenarios (when only one player remains)
+      if (getRemainingPlayers() <= 1) {
         const oneLeft = getWinnerName();
-        if (oneLeft) winners = [{ player: oneLeft, amount: snapshot.pot }];
-      }
-      if (winners.length) {
-        const vb = {};
-        for (const w of winners) vb[w.player] = (vb[w.player] || 0) + w.amount;
-        setVisibleBets(vb);
-        setAwardPhase("show");
+        if (oneLeft) {
+          const vb = {};
+          vb[oneLeft] = snapshot.pot;
+          setVisibleBets(vb);
+          setAwardPhase("show");
+        }
       }
     }
   }
+
+
 
   function handlePrev() {
     if (!parsedHand) return;
@@ -707,11 +775,71 @@ export default function PokerTable() {
 
   const rotatedPlayers = useMemo(() => getRotatedPlayers(), [parsedHand]);
 
+  // Function to resolve GTO URL based on hand history
+  const resolveGtoUrl = (hand) => {
+    if (!hand || currentStage !== "preflop") return null;
+    
+    // Find the next player to act (not the raiser, but the current player whose turn it is)
+    const nextPlayerName = getNextActingPlayerName();
+    if (!nextPlayerName) return null;
+    
+    const nextPlayer = hand.players[nextPlayerName];
+    if (!nextPlayer) return null;
+    
+    // Get next player's position
+    const position = nextPlayer.position;
+    if (!position) return null;
+    
+    // Calculate effective stack depth - the minimum of current player's stack and largest remaining stack
+    const remainingPlayers = Object.values(hand.players).filter(player => 
+      player.name !== nextPlayerName && !snapshot.foldsSet.has(player.name)
+    );
+    
+    let effectiveStack;
+    if (remainingPlayers.length > 0) {
+      // Use the minimum of current player's stack and largest remaining stack
+      const currentPlayerStack = Math.floor(nextPlayer.stack / hand.bigBlind);
+      const remainingStacks = remainingPlayers.map(player => 
+        Math.floor(player.stack / hand.bigBlind)
+      );
+      const largestRemainingStack = Math.max(...remainingStacks);
+      effectiveStack = Math.min(currentPlayerStack, largestRemainingStack);
+    } else {
+      // If no remaining players, use the current player's own stack
+      effectiveStack = Math.floor(nextPlayer.stack / hand.bigBlind);
+    }
+    
+    // Map to available stack depths (15, 20, 25, 30, 40, 50, 60, 80, 100)
+    const availableDepths = [15, 20, 25, 30, 40, 50, 60, 80, 100];
+    const closestDepth = availableDepths.reduce((prev, curr) => 
+      Math.abs(curr - effectiveStack) < Math.abs(prev - effectiveStack) ? curr : prev
+    );
+    
+    // Construct the URL
+    const url = `ranges/Main/7max/open/${position}/${closestDepth}BB.png`;
+    return url;
+  };
+
   /* ─────────── Render ─────────── */
 
   const potLabel = parsedHand?.bigBlind
     ? (snapshot.pot / parsedHand.bigBlind).toFixed(2) + " BB"
     : snapshot.pot;
+
+  // Show winner information in pot display when there's a showdown
+  const getPotDisplay = () => {
+    if (awardPhase === "show" && winnersAtShowdown.length > 0) {
+      const winner = winnersAtShowdown[0];
+      const winnerAmount = parsedHand?.bigBlind 
+        ? (winner.amount / parsedHand.bigBlind).toFixed(2) + " BB"
+        : winner.amount;
+      return `${winner.player} won ${winnerAmount}`;
+    }
+    if (awardPhase === "applied") {
+      return ""; // No pot display after chips have been awarded
+    }
+    return `Pot: ${potLabel}`;
+  };
 
   function calculateAnteLabel() {
     if (!parsedHand) return "0";
@@ -888,21 +1016,6 @@ export default function PokerTable() {
                 <React.Fragment key={i}>{renderCard(card)}</React.Fragment>
               ))}
             </div>
-            {(currentStage === "showdown" || awardPhase === "show") && winnersAtShowdown.length > 0 && (
-              <div className="showdown-banner" role="status" aria-live="polite">
-                <div className="showdown-title">Showdown Result</div>
-                <ul className="showdown-list">
-                  {winnersAtShowdown.map((w, i) => (
-                    <li key={i}>
-                      <strong>{w.player}</strong>
-                      {Number.isFinite(+w.amount) ? (
-                        <> won {parsedHand?.bigBlind ? (w.amount / parsedHand.bigBlind).toFixed(2) + " BB" : w.amount + " chips"}</>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
 
             {parsedHand && (
               <div
@@ -939,15 +1052,7 @@ export default function PokerTable() {
               </div>
             )}
 
-            <div className="pot">Pot: {potLabel}</div>
-
-            <div className="ante">
-              {currentStage === "preflop" ? (
-                <span className="ante-label">Ante: {calculateAnteLabel()}</span>
-              ) : (
-                <span className="ante-label">Pot: {potLabel}</span>
-              )}
-            </div>
+            <div className="pot">{getPotDisplay()}</div>
           </div>
         </div>
 
@@ -1002,8 +1107,8 @@ export default function PokerTable() {
         open={showGto}
         onClose={() => setShowGto(false)}
         url={gtoUrl}
-        inferredPosition={PLACEHOLDER_POS}
-        inferredBb={PLACEHOLDER_BB}
+        inferredPosition={gtoUrl ? gtoUrl.match(/open\/([A-Za-z]+)\//)?.[1] : null}
+        inferredBb={gtoUrl ? parseInt(gtoUrl.match(/(\d+)BB\.png/)?.[1]) : null}
       />
       {/* Always-on hand ranking helper (bottom-left) */}
       <HandRanks />
