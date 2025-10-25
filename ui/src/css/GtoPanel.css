@@ -65,12 +65,14 @@
   width: 10px;
   height: 10px;
   border-radius: 2px;
-  margin-right: 6px;
+  margin-right: 4px;
   border: 1px solid rgba(0,0,0,0.25);
 }
 
-.swatch-blue { background: #3b82f6; } /* blue = raise/open */
-.swatch-red  { background: #f37463; } /* red  = fold       */
+.swatch-red   { background: #f37463; } /* red   = raise/open */
+.swatch-green { background: #22c55e; } /* green = call       */
+.swatch-wine  { background: #8b0000; } /* wine  = all-in/jam */
+.swatch-blue  { background: #3b82f6; } /* blue  = fold       */
 
 .legend-sep {
   opacity: 0.5;

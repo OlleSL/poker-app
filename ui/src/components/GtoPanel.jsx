@@ -5,7 +5,7 @@ export function GtoPanel({ open, onClose, url, inferredPosition, inferredBb }) {
   const [imgError, setImgError] = useState(false);
 
   // Derive pos+bb from props or fallback to parsing the URL path
-  const { posLabel, bbLabel } = useMemo(() => {
+  const { posLabel, bbLabel, raiseAmount } = useMemo(() => {
     let pos = inferredPosition || null;
     let bb = inferredBb || null;
 
@@ -31,7 +31,31 @@ export function GtoPanel({ open, onClose, url, inferredPosition, inferredBb }) {
     const posText = pos ? `${posMap[pos] || pos} (${pos})` : null;
     const bbText = bb ? `${bb} BB (effective)` : null;
 
-    return { posLabel: posText, bbLabel: bbText };
+    // Calculate raise amount based on stack depth and position
+    let raiseAmt = null;
+    if (bb && pos) {
+      // Special sizing for SB RFI (when folded to)
+      if (pos === "SB") {
+        if (bb >= 30) {
+          raiseAmt = "3.2 BB";
+        } else if (bb >= 20) {
+          raiseAmt = "3.0 BB";
+        } else {
+          raiseAmt = "2.3 BB";
+        }
+      } else {
+        // Standard sizing for other positions
+        if (bb >= 80) {
+          raiseAmt = "2.5 BB";
+        } else if (bb >= 30) {
+          raiseAmt = "2.3 BB";
+        } else {
+          raiseAmt = "2.0 BB";
+        }
+      }
+    }
+
+    return { posLabel: posText, bbLabel: bbText, raiseAmount: raiseAmt };
   }, [url, inferredPosition, inferredBb]);
 
   useEffect(() => {
@@ -47,7 +71,7 @@ export function GtoPanel({ open, onClose, url, inferredPosition, inferredBb }) {
           <div className="gto-title">
             GTO Breakdown
             <div className="gto-subtitle">
-              <span className="gto-chip">Spot: Open-raise</span>
+              <span className="gto-chip">Spot: RFI {raiseAmount ? `(${raiseAmount})` : "(Open-raise)"}</span>
               {posLabel && (
                 <>
                   <span className="legend-sep">•</span>
@@ -72,6 +96,10 @@ export function GtoPanel({ open, onClose, url, inferredPosition, inferredBb }) {
             <>
               <div className="gto-legend" aria-label="Legend">
                 <span className="swatch swatch-red" /> Raise / Open
+                <span className="legend-sep">•</span>
+                <span className="swatch swatch-green" /> Call
+                <span className="legend-sep">•</span>
+                <span className="swatch swatch-wine" /> All-in / Jam
                 <span className="legend-sep">•</span>
                 <span className="swatch swatch-blue" /> Fold
               </div>
