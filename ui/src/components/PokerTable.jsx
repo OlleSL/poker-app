@@ -611,7 +611,8 @@ export default function PokerTable() {
       if (winners.length) {
         const vb = {};
         for (const w of winners) {
-          vb[w.player] = w.amount; // Set directly, don't add
+          // Award the full pot to each winner, not just their net winnings
+          vb[w.player] = snapshot.pot; // Use full pot instead of w.amount
         }
         setVisibleBets(vb);
         setAwardPhase("show"); // banner + chip tags appear now; next click applies
@@ -1052,7 +1053,16 @@ export default function PokerTable() {
               </div>
             )}
 
-            <div className="pot">{getPotDisplay()}</div>
+            <div className="pot">
+              <div className="pot-label">{getPotDisplay()}</div>
+            </div>
+            
+            {/* Ante display - only show on preflop */}
+            {parsedHand?.anteTotal > 0 && currentStage === "preflop" && (
+              <div className="ante-container">
+                <div className="ante-label">Ante: {calculateAnteLabel()}</div>
+              </div>
+            )}
           </div>
         </div>
 
