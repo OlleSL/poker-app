@@ -10,7 +10,6 @@ export function GtoPanel({ open, onClose, url, inferredPosition, inferredBb }) {
     let bb = inferredBb || null;
 
     if ((!pos || !bb) && typeof url === "string") {
-      // Try to parse /ranges/Main/7max/open/BTN/30BB.png
       const m = url.match(/\/open\/([A-Za-z]+)\/(\d+)BB\.png$/i);
       if (m) {
         pos = pos || m[1].toUpperCase();
