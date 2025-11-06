@@ -915,7 +915,24 @@ export default function PokerTable() {
           </div> 
 
           <div style={{ width: "var(--table-w)", maxWidth: "min(90vw, var(--table-w))", margin: "1px auto 0", fontSize: 12, color: "#ddd", textAlign: "center" }}>
-            Supported: Red Dragon / text exports (.txt, .log). We’ll auto-detect line endings and BOM.
+            Supported: Red Dragon / text exports (.txt, .log). We'll auto-detect line endings and BOM.
+          </div>
+
+          {/* Range limitations info */}
+          <div style={{ 
+            width: "var(--table-w)", 
+            maxWidth: "min(90vw, var(--table-w))", 
+            margin: "8px auto 0", 
+            padding: "8px 12px",
+            fontSize: 11, 
+            color: "#bbb", 
+            textAlign: "center",
+            backgroundColor: "rgba(255, 255, 255, 0.05)",
+            borderRadius: "4px",
+            border: "1px solid rgba(255, 255, 255, 0.1)"
+          }}>
+            <strong style={{ color: "#fff" }}>GTO Range Info:</strong> Currently supports preflop RFI ranges only. 
+            Available stack depths: 15BB, 20BB, 25BB, 30BB, 40BB, 50BB, 60BB, 80BB, 100BB.
           </div>
 
           {/* collapsible paste panel */}
