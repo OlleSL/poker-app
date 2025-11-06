@@ -6,7 +6,7 @@ import "./css/GtoPanel.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename="/poker-app">
       <App />
     </BrowserRouter>
   </React.StrictMode>
