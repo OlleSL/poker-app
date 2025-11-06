@@ -1093,11 +1093,12 @@ export default function PokerTable() {
           <div className="hand-controls">
             <button
               onClick={() => setCurrentHandIndex(0)}
-              className="step-button"
+              className="step-button hand-nav-button"
               disabled={currentHandIndex === 0}
               title="First hand"
             >
-              ⏪
+              <span aria-hidden="true">«</span>
+              <span className="hand-nav-label">First</span>
             </button>
             <button
               onClick={() => {
@@ -1105,11 +1106,12 @@ export default function PokerTable() {
                   setCurrentHandIndex((i) => i - 1);
                 }
               }}
-              className="step-button"
+              className="step-button hand-nav-button"
               disabled={currentHandIndex === 0}
               title="Previous hand"
             >
-              ⏮️
+              <span aria-hidden="true">‹</span>
+              <span className="hand-nav-label">Prev</span>
             </button>
             {editingHandNumber ? (
               <input
@@ -1164,6 +1166,7 @@ export default function PokerTable() {
                 title="Click to jump to hand number"
               >
                 Hand {currentHandIndex + 1} of {hands.length}
+                <span className="hand-counter-hint">Click to jump</span>
               </span>
             )}
             <button
@@ -1172,19 +1175,21 @@ export default function PokerTable() {
                   setCurrentHandIndex((i) => i + 1);
                 }
               }}
-              className="step-button"
+              className="step-button hand-nav-button"
               disabled={currentHandIndex >= hands.length - 1}
               title="Next hand"
             >
-              ⏭️
+              <span className="hand-nav-label">Next</span>
+              <span aria-hidden="true">›</span>
             </button>
             <button
               onClick={() => setCurrentHandIndex(hands.length - 1)}
-              className="step-button"
+              className="step-button hand-nav-button"
               disabled={currentHandIndex >= hands.length - 1}
               title="Last hand"
             >
-              ⏩
+              <span className="hand-nav-label">Last</span>
+              <span aria-hidden="true">»</span>
             </button>
           </div>
         </div> 
