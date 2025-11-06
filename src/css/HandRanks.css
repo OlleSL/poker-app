@@ -2,7 +2,8 @@
   position: fixed;
   left: 16px;
   bottom: 16px;
-  width: 280px;
+  width: min(280px, 90vw);
+  max-width: 280px;
   max-height: 70vh;
   background: #101418;
   color: #e8f0f7;
@@ -186,7 +187,7 @@
   .handranks {
     left: 8px;
     right: 8px;
-    width: auto;
+    width: min(240px, 80vw);
   }
 
   .handranks__collapseToggle {
