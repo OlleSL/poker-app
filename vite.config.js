@@ -5,6 +5,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   base: '/poker-app/',
   plugins: [react()],
+  build: {
+    sourcemap: false, // Disable source maps to prevent 404s for source files
+  },
   server: {
     host: '127.0.0.1',  // bind IPv4 loopback (avoids IPv6/alias weirdness)
     port: 5174,         // pick the port you want
