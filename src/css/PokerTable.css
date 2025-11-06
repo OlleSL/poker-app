@@ -309,17 +309,15 @@ textarea {
   align-items: center;
 }
 
-.hand-counter:hover {
-  color: #ccc;
-  text-decoration: underline;
+.hand-jump-button {
+  font-size: 16px;
+  padding: 8px 12px;
+  background-color: #4f9cff;
+  color: white;
 }
 
-.hand-counter-hint {
-  margin-left: 8px;
-  font-size: 12px;
-  color: #888;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+.hand-jump-button:hover:not(:disabled) {
+  background-color: #91c4ff;
 }
 
 .hand-number-input {

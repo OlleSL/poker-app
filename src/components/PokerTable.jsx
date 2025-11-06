@@ -1113,6 +1113,9 @@ export default function PokerTable() {
               <span aria-hidden="true">‹</span>
               <span className="hand-nav-label">Prev</span>
             </button>
+            <span className="hand-counter" aria-live="polite">
+              Hand {currentHandIndex + 1} of {hands.length}
+            </span>
             {editingHandNumber ? (
               <input
                 type="number"
@@ -1144,7 +1147,7 @@ export default function PokerTable() {
                 autoFocus
                 className="hand-number-input"
                 style={{
-                  width: "60px",
+                  width: "70px",
                   padding: "4px 8px",
                   fontSize: "16px",
                   textAlign: "center",
@@ -1156,18 +1159,20 @@ export default function PokerTable() {
                 }}
               />
             ) : (
-              <span
-                className="hand-counter"
+              <button
+                type="button"
+                className="step-button hand-nav-button hand-jump-button"
                 onClick={() => {
+                  if (hands.length === 0) return;
                   setEditingHandNumber(true);
                   setHandNumberInput(String(currentHandIndex + 1));
                 }}
-                style={{ cursor: "pointer", userSelect: "none" }}
-                title="Click to jump to hand number"
+                disabled={hands.length === 0}
+                title="Jump to a specific hand"
               >
-                Hand {currentHandIndex + 1} of {hands.length}
-                <span className="hand-counter-hint">Click to jump</span>
-              </span>
+                <span className="hand-nav-label">Jump</span>
+                <span aria-hidden="true">#</span>
+              </button>
             )}
             <button
               onClick={() => {
