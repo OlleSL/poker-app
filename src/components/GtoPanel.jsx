@@ -116,6 +116,20 @@ export function GtoPanel({ open, onClose, url, inferredPosition, inferredBb }) {
             </>
           )}
         </div>
+
+        <footer className="gto-footer">
+          <div style={{ 
+            padding: "8px 16px", 
+            fontSize: 10, 
+            color: "#aaa", 
+            textAlign: "center",
+            borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+            backgroundColor: "rgba(0, 0, 0, 0.2)"
+          }}>
+            <strong style={{ color: "#ccc" }}>Range Limitations:</strong> Currently supports preflop RFI ranges only. 
+            Available stack depths: 15BB, 20BB, 25BB, 30BB, 40BB, 50BB, 60BB, 80BB, 100BB.
+          </div>
+        </footer>
       </aside>
     </div>
   );
