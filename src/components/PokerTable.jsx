@@ -1170,7 +1170,7 @@ export default function PokerTable() {
                 disabled={hands.length === 0}
                 title="Jump to a specific hand"
               >
-                <span className="hand-nav-label">Jump</span>
+                <span className="hand-nav-label">Jump Hand</span>
                 <span aria-hidden="true">#</span>
               </button>
             )}
