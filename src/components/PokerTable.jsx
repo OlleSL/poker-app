@@ -1121,7 +1121,7 @@ export default function PokerTable() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     const num = parseInt(handNumberInput);
-                    if (num >= 1 && num <= hands.length) {
+                    if (!isNaN(num) && num >= 1 && num <= hands.length && hands.length > 0) {
                       setCurrentHandIndex(num - 1);
                       setEditingHandNumber(false);
                       setHandNumberInput("");
@@ -1133,7 +1133,7 @@ export default function PokerTable() {
                 }}
                 onBlur={() => {
                   const num = parseInt(handNumberInput);
-                  if (num >= 1 && num <= hands.length) {
+                  if (!isNaN(num) && num >= 1 && num <= hands.length && hands.length > 0) {
                     setCurrentHandIndex(num - 1);
                   }
                   setEditingHandNumber(false);
