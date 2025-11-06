@@ -279,8 +279,13 @@ textarea {
   transition: background 0.2s ease;
 }
 
-.step-button:hover {
+.step-button:hover:not(:disabled) {
   background-color: rgb(255, 255, 255);
+}
+
+.step-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .hand-counter {
@@ -288,6 +293,15 @@ textarea {
   color: white;
   display: flex;
   align-items: center;
+}
+
+.hand-counter:hover {
+  color: #ccc;
+  text-decoration: underline;
+}
+
+.hand-number-input {
+  font-size: 18px;
 }
 
 .chip-animation {

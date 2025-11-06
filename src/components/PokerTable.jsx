@@ -179,6 +179,8 @@ export default function PokerTable() {
   const [flashAction, setFlashAction] = useState(null); // { player, action, id }
   const [awardPhase, setAwardPhase] = useState("none"); // "none" | "show" | "applied"
   const [stackPayouts, setStackPayouts] = useState({}); // { [player]: amount }
+  const [editingHandNumber, setEditingHandNumber] = useState(false);
+  const [handNumberInput, setHandNumberInput] = useState("");
 
   const parsedHand = hands[currentHandIndex] || null;
   const dynamicPlayers = Object.values(parsedHand?.players || {});
@@ -1090,18 +1092,80 @@ export default function PokerTable() {
 
           <div className="hand-controls">
             <button
+              onClick={() => setCurrentHandIndex(0)}
+              className="step-button"
+              disabled={currentHandIndex === 0}
+              title="First hand"
+            >
+              ⏪
+            </button>
+            <button
               onClick={() => {
                 if (currentHandIndex > 0) {
                   setCurrentHandIndex((i) => i - 1);
                 }
               }}
               className="step-button"
+              disabled={currentHandIndex === 0}
+              title="Previous hand"
             >
               ⏮️
             </button>
-            <span className="hand-counter">
-              Hand {currentHandIndex + 1} of {hands.length}
-            </span>
+            {editingHandNumber ? (
+              <input
+                type="number"
+                min="1"
+                max={hands.length}
+                value={handNumberInput}
+                onChange={(e) => setHandNumberInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const num = parseInt(handNumberInput);
+                    if (num >= 1 && num <= hands.length) {
+                      setCurrentHandIndex(num - 1);
+                      setEditingHandNumber(false);
+                      setHandNumberInput("");
+                    }
+                  } else if (e.key === "Escape") {
+                    setEditingHandNumber(false);
+                    setHandNumberInput("");
+                  }
+                }}
+                onBlur={() => {
+                  const num = parseInt(handNumberInput);
+                  if (num >= 1 && num <= hands.length) {
+                    setCurrentHandIndex(num - 1);
+                  }
+                  setEditingHandNumber(false);
+                  setHandNumberInput("");
+                }}
+                autoFocus
+                className="hand-number-input"
+                style={{
+                  width: "60px",
+                  padding: "4px 8px",
+                  fontSize: "16px",
+                  textAlign: "center",
+                  backgroundColor: "#333",
+                  color: "white",
+                  border: "2px solid #8f8f8f",
+                  borderRadius: "4px",
+                  outline: "none",
+                }}
+              />
+            ) : (
+              <span
+                className="hand-counter"
+                onClick={() => {
+                  setEditingHandNumber(true);
+                  setHandNumberInput(String(currentHandIndex + 1));
+                }}
+                style={{ cursor: "pointer", userSelect: "none" }}
+                title="Click to jump to hand number"
+              >
+                Hand {currentHandIndex + 1} of {hands.length}
+              </span>
+            )}
             <button
               onClick={() => {
                 if (currentHandIndex < hands.length - 1) {
@@ -1109,8 +1173,18 @@ export default function PokerTable() {
                 }
               }}
               className="step-button"
+              disabled={currentHandIndex >= hands.length - 1}
+              title="Next hand"
             >
               ⏭️
+            </button>
+            <button
+              onClick={() => setCurrentHandIndex(hands.length - 1)}
+              className="step-button"
+              disabled={currentHandIndex >= hands.length - 1}
+              title="Last hand"
+            >
+              ⏩
             </button>
           </div>
         </div> 
