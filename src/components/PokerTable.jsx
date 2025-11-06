@@ -13,8 +13,8 @@ import { GtoPanel } from "../components/GtoPanel";
 const PLACEHOLDER_RANGE_URL = "ranges/Main/7max/open/BTN/30BB.png";
 const PLACEHOLDER_POS = "BTN";
 const PLACEHOLDER_BB = 30;
-// Web worker for parsing (Vite syntax)
-const workerUrl = new URL("../workers/parser.worker.js", import.meta.url);
+// Web worker for parsing (Vite syntax with ?worker query)
+import ParserWorker from "../workers/parser.worker.js?worker";
 import HandRanks from "../components/HandRanks";
 
 /* ───────────────────── Helpers & constants ───────────────────── */
@@ -205,14 +205,16 @@ export default function PokerTable() {
 
   useEffect(() => {
     try {
-      const w = new Worker(workerUrl, { type: "module" });
+      // Vite handles worker URL construction automatically with ?worker query
+      const w = new ParserWorker();
       w.onerror = (e) => {
         console.error("Parser worker error:", e?.message || e);
         // disable worker so we fall back to sync parser
         workerRef.current = null;
       };
       workerRef.current = w;
-    } catch {
+    } catch (e) {
+      console.error("Failed to create worker:", e);
       workerRef.current = null; // fallback will be sync parsing
     }
     return () => workerRef.current?.terminate();
