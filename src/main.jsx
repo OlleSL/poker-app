@@ -4,6 +4,8 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
 import "./css/GtoPanel.css";
 
+// Router configured with base path for GitHub Pages deployment
+
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter basename="/poker-app">
