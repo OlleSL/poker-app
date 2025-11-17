@@ -9,10 +9,7 @@ import "../css/PokerTable.css";
 import avatar from "../assets/avatar.png";
 import { parseRedDragonHands } from "../utils/parser"; // optional fallback (not used if worker is available)
 import { GtoPanel } from "../components/GtoPanel";
-// import { resolveOpenRfiUrl } from "../gto/resolveOpenRfi";
-const PLACEHOLDER_RANGE_URL = "ranges/Main/7max/open/BTN/30BB.png";
-const PLACEHOLDER_POS = "BTN";
-const PLACEHOLDER_BB = 30;
+
 // Web worker for parsing (Vite syntax with ?worker query)
 import ParserWorker from "../workers/parser.worker.js?worker";
 import HandRanks from "../components/HandRanks";
@@ -475,20 +472,6 @@ export default function PokerTable() {
     if (!isHandOver()) return null;
     const remaining = dynamicPlayers.filter((p) => !hasPlayerFolded(p.name));
     return remaining.length === 1 ? remaining[0].name : null;
-  }
-
-  function getBlindPosts(hand) {
-    const posts = {};
-    const preflop = hand?.actions?.preflop || [];
-    for (const action of preflop) {
-      if (
-        action.action === "posts" &&
-        (action.amount === hand.bigBlind || action.amount === hand.bigBlind / 2)
-      ) {
-        posts[action.player] = action.amount;
-      }
-    }
-    return posts;
   }
 
   function extractWinnersFromHand(hand) {
