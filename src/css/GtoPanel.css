@@ -1,0 +1,126 @@
+.gto-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.5);
+  display: flex; align-items: stretch; justify-content: flex-end;
+  z-index: 1000;
+}
+
+.gto-panel {
+  width: min(560px, 90vw);
+  height: 100%;
+  background: #121212; color: #eee;
+  border-left: 1px solid #333;
+  box-shadow: -8px 0 24px rgba(0,0,0,.4);
+  display: flex; flex-direction: column;
+  transform: translateX(100%);
+  animation: gto-slide-in 160ms ease-out forwards;
+}
+
+@keyframes gto-slide-in {
+  to { transform: translateX(0); }
+}
+
+.gto-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 12px; border-bottom: 1px solid #2a2a2a;
+  flex: 0 0 auto; /* sticky header */
+}
+
+.gto-title { font-weight: 600; }
+.gto-close { background: none; border: none; color: #ccc; font-size: 20px; cursor: pointer; }
+
+.gto-content {
+  flex: 1 1 auto;             /* take remaining height */
+  overflow: auto;             /* scroll only the content */
+  padding: 8px 0 16px;        /* room for image edges */
+}
+
+.gto-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  background: #000;
+}
+
+.gto-empty { padding: 16px; color: #bbb; }
+
+.gto-subtitle {
+  font-size: 12px;
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
+.gto-legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  opacity: 0.85;
+  padding: 6px 12px 0 12px;
+}
+
+.gto-legend .swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 4px;
+  border: 1px solid rgba(0,0,0,0.25);
+}
+
+.swatch-red   { background: #f37463; } /* red   = raise/open */
+.swatch-green { background: #22c55e; } /* green = call       */
+.swatch-wine  { background: #8b0000; } /* wine  = all-in/jam */
+.swatch-blue  { background: #3b82f6; } /* blue  = fold       */
+
+.legend-sep {
+  opacity: 0.5;
+}
+
+.gto-subtitle {
+  margin-top: 4px;
+  font-size: 12px;
+  opacity: 0.85;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.gto-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.legend-sep {
+  opacity: 0.6;
+  margin: 0 2px;
+}
+
+.gto-caption {
+  margin-top: 8px;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* Make the main title a bit larger */
+.gto-title {
+  font-size: 20px;       /* was ~16px; tweak as preferred (e.g., 22px) */
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Give the subtitle a little more breathing room */
+.gto-subtitle {
+  margin-top: 6px;       /* was 4px */
+  font-size: 13px;       /* was 12px */
+}
+
+/* Optional: slightly larger legend text too */
+.gto-legend {
+  font-size: 13px;       /* was 12px */
+}
