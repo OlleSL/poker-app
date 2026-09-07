@@ -9,6 +9,7 @@ import "../css/PokerTable.css";
 import avatar from "../assets/avatar.png";
 import { parseRedDragonHands } from "../utils/parser"; // optional fallback (not used if worker is available)
 import { GtoPanel } from "../components/GtoPanel";
+import HandSessionPanel from "../components/HandSessionPanel";
 
 // Web worker for parsing (Vite syntax with ?worker query)
 import ParserWorker from "../workers/parser.worker.js?worker";
@@ -423,6 +424,60 @@ export default function PokerTable() {
     setCurrentActionIndex(-1);
     setIsPlaying(false);
   }, [parsedHand]);
+
+  /* PokerTracker-style keyboard navigation */
+  useEffect(() => {
+    function isTypingTarget(el) {
+      if (!el) return false;
+      const tag = el.tagName;
+      return (
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        tag === "SELECT" ||
+        el.isContentEditable
+      );
+    }
+
+    function onKeyDown(e) {
+      if (isTypingTarget(e.target)) return;
+      if (!hands.length) return;
+
+      const mod = e.ctrlKey || e.metaKey;
+
+      // Ctrl/Cmd + ←/→ : previous / next hand (PokerTracker)
+      if (mod && e.key === "ArrowLeft") {
+        e.preventDefault();
+        setCurrentHandIndex((i) => Math.max(0, i - 1));
+        return;
+      }
+      if (mod && e.key === "ArrowRight") {
+        e.preventDefault();
+        setCurrentHandIndex((i) => Math.min(hands.length - 1, i + 1));
+        return;
+      }
+
+      // ← / → : step within hand
+      if (!mod && !e.shiftKey && e.key === "ArrowLeft") {
+        e.preventDefault();
+        handlePrev();
+        return;
+      }
+      if (!mod && !e.shiftKey && e.key === "ArrowRight") {
+        e.preventDefault();
+        handleNext();
+        return;
+      }
+
+      // Space: play / pause
+      if (e.code === "Space" || e.key === " ") {
+        e.preventDefault();
+        setIsPlaying((p) => !p);
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [hands.length, parsedHand, currentStage, currentActionIndex, awardPhase, visibleBets]);
 
   /* Update GTO URL when hand, stage, or action index changes */
   useEffect(() => {
@@ -892,6 +947,15 @@ export default function PokerTable() {
           {/* <h1 className="title">Hand Replayer</h1> */}
 
           {/* NEW: unified uploader grid */}
+          {hands.length === 0 && (
+            <div className="empty-state">
+              <div className="empty-state__title">Replay your tournament hands</div>
+              <p className="empty-state__text">
+                Paste or upload Red Dragon / PokerStars-style hand histories, or try the demo.
+              </p>
+            </div>
+          )}
+
           <div className="uploader-grid">
             {/* Paste */}
             <button
@@ -954,6 +1018,14 @@ export default function PokerTable() {
             >
               Try demo hands
             </button>
+            {hands.length > 0 && (
+              <>
+                <span className="uploader-hint-sep" aria-hidden="true">·</span>
+                <span title="PokerTracker-style shortcuts">
+                  ←/→ action · Ctrl+←/→ hand · Space play
+                </span>
+              </>
+            )}
           </div>
 
           {/* collapsible paste panel */}
@@ -1033,10 +1105,10 @@ export default function PokerTable() {
                             {flashAction.action.toUpperCase()}
                           </div>
                         )}
-                        {player.position && (
-                          <div className="position-tag">{player.position}</div>
-                        )}
                       </div>
+                      {player.position && (
+                        <div className="position-tag">{player.position}</div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1253,6 +1325,13 @@ export default function PokerTable() {
           </div>
         </div> 
       </div>
+      {hands.length > 0 && (
+        <HandSessionPanel
+          hands={hands}
+          currentHandIndex={currentHandIndex}
+          onSelectHand={setCurrentHandIndex}
+        />
+      )}
       <GtoPanel
         open={showGto}
         onClose={() => setShowGto(false)}

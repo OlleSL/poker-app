@@ -169,6 +169,7 @@ body {
  
 /* 👇 This is now the main border container around the player identity */
 .player-info {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -176,7 +177,8 @@ body {
   background: rgb(0, 23, 39);
   border: 2px solid #aaa;
   border-radius: 10px;
-  padding: 6px 10px;
+  padding: 6px 28px 6px 10px;
+  min-width: 120px;
 }
 
 .avatar {
@@ -227,9 +229,19 @@ button.stack-toggle:focus-visible {
 }
 
 .position-tag {
-  font-size: 12px;
-  color: #e0e0e0; /* Higher contrast */
-  margin-top: 2px;
+  position: absolute;
+  right: 6px;
+  bottom: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #d8d8d8;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 1px 4px;
+  line-height: 1.2;
+  pointer-events: none;
 }
 
 .table-heading {
@@ -682,6 +694,28 @@ textarea {
 
 .uploader-hint-link:active {
   opacity: 0.85;
+}
+
+.empty-state {
+  width: var(--table-w);
+  max-width: min(90vw, var(--table-w));
+  margin: 0 auto 4px;
+  text-align: center;
+  color: #ddd;
+}
+
+.empty-state__title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.empty-state__text {
+  margin: 0;
+  font-size: 14px;
+  color: #bdbdbd;
+  line-height: 1.45;
 }
 
 /* Keep the paste panel aligned with the table width */
