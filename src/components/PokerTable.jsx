@@ -1009,7 +1009,25 @@ export default function PokerTable() {
                       <img src={avatar} alt="avatar" className="avatar" />
                       <div className="name-stack">
                         <div className="name">{player.name}</div>
-                        <div className="stack">{remainingChipsLabel(player)}</div>
+                        <button
+                          type="button"
+                          className="stack stack-toggle"
+                          onClick={() =>
+                            setAmountUnit((u) => (u === "bb" ? "chips" : "bb"))
+                          }
+                          title={
+                            amountUnit === "bb"
+                              ? "Click to show chips"
+                              : "Click to show big blinds"
+                          }
+                          aria-label={
+                            amountUnit === "bb"
+                              ? "Stack in big blinds. Click to show chips."
+                              : "Stack in chips. Click to show big blinds."
+                          }
+                        >
+                          {remainingChipsLabel(player)}
+                        </button>
                         {flashAction?.player === player.name && (
                           <div className="action-flash">
                             {flashAction.action.toUpperCase()}
@@ -1124,24 +1142,6 @@ export default function PokerTable() {
             >
               📊 GTO
             </button>
-            <div className="unit-toggle" role="group" aria-label="Amount unit">
-              <button
-                type="button"
-                className={`unit-toggle-btn${amountUnit === "bb" ? " is-active" : ""}`}
-                onClick={() => setAmountUnit("bb")}
-                title="Show amounts in big blinds"
-              >
-                BB
-              </button>
-              <button
-                type="button"
-                className={`unit-toggle-btn${amountUnit === "chips" ? " is-active" : ""}`}
-                onClick={() => setAmountUnit("chips")}
-                title="Show amounts in chips"
-              >
-                Chips
-              </button>
-            </div>
           </div>
 
           <div className="hand-controls">
