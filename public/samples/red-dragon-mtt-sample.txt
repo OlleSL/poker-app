@@ -1,0 +1,127 @@
+RedDragon Hand #900000001: Tournament #65188, $23.5+$1.5 Hold'em No Limit - Level I (125/250) - 2026/06/09 21:06:31 UTC
+Table '65188 DemoTable900000001' 6-max Seat #5 is the button
+Seat 1: HeroPlayer (2050.00 in chips)
+Seat 2: DrRiver (6057.00 in chips)
+Seat 3: MidRange (6948.25 in chips)
+Seat 4: WideOpen (12313.00 in chips)
+Seat 5: ButtonAce (6476.00 in chips)
+Seat 6: ShortStack (4517.75 in chips)
+HeroPlayer: posts the ante 31
+DrRiver: posts the ante 31
+MidRange: posts the ante 31
+WideOpen: posts the ante 31
+ButtonAce: posts the ante 31
+ShortStack: posts the ante 31
+ShortStack: posts small blind 125
+HeroPlayer: posts big blind 250
+*** HOLE CARDS ***
+Dealt to HeroPlayer [Jd Js]
+DrRiver: raises 280.00 to 530.00
+MidRange: folds
+WideOpen: folds
+ButtonAce: calls 530.00
+ShortStack: folds
+HeroPlayer: raises 1489.00 to 2019.00 and is all-in
+DrRiver: raises 4007.00 to 6026.00 and is all-in
+ButtonAce: calls 5496.00
+*** FLOP *** [3h Qs 5c]
+*** TURN *** [3h Qs 5c] [Ah]
+*** RIVER *** [3h Qs 5c Ah] [Td]
+*** SHOW DOWN ***
+HeroPlayer: shows [Jd Js] (a pair of Jacks)
+DrRiver: shows [Ad 9d] (a pair of Aces)
+ButtonAce: shows [Kc Jc] (a straight, Ten to Ace)
+ButtonAce collected 14382.00 from pot
+*** SUMMARY ***
+Total pot 14382.00 | Rake 0.00
+Board [3h Qs 5c Ah Td]
+Seat 1: HeroPlayer (big blind) showed [Jd Js] and lost
+Seat 2: DrRiver showed [Ad 9d] and lost
+Seat 3: MidRange folded before Flop (didn't bet)
+Seat 4: WideOpen folded before Flop (didn't bet)
+Seat 5: ButtonAce (button) showed [Kc Jc] and won (14382.00)
+Seat 6: ShortStack (small blind) folded before Flop
+
+
+RedDragon Hand #900000002: Tournament #65188, $23.5+$1.5 Hold'em No Limit - Level I (125/250) - 2026/06/09 21:05:16 UTC
+Table '65188 DemoTable900000002' 6-max Seat #4 is the button
+Seat 1: HeroPlayer (2081.00 in chips)
+Seat 2: DrRiver (5527.00 in chips)
+Seat 3: MidRange (6979.25 in chips)
+Seat 4: WideOpen (12344.00 in chips)
+Seat 5: ButtonAce (6632.00 in chips)
+Seat 6: ShortStack (4798.75 in chips)
+HeroPlayer: posts the ante 31
+DrRiver: posts the ante 31
+MidRange: posts the ante 31
+WideOpen: posts the ante 31
+ButtonAce: posts the ante 31
+ShortStack: posts the ante 31
+ButtonAce: posts small blind 125
+ShortStack: posts big blind 250
+*** HOLE CARDS ***
+Dealt to HeroPlayer [8c 5d]
+HeroPlayer: folds
+DrRiver: raises 5246.00 to 5496.00 and is all-in
+MidRange: folds
+WideOpen: folds
+ButtonAce: folds
+ShortStack: folds
+Uncalled bet (5246.00) returned to DrRiver
+DrRiver collected 811.00 from pot
+*** SUMMARY ***
+Total pot 811.00 | Rake 0.00
+Seat 1: HeroPlayer folded before Flop (didn't bet)
+Seat 2: DrRiver collected (811.00)
+Seat 3: MidRange folded before Flop (didn't bet)
+Seat 4: WideOpen (button) folded before Flop (didn't bet)
+Seat 5: ButtonAce (small blind) folded before Flop
+Seat 6: ShortStack (big blind) folded before Flop
+
+
+RedDragon Hand #900000003: Tournament #65188, $23.5+$1.5 Hold'em No Limit - Level I (125/250) - 2026/06/09 21:04:51 UTC
+Table '65188 DemoTable900000003' 6-max Seat #3 is the button
+Seat 1: HeroPlayer (2112.00 in chips)
+Seat 2: DrRiver (5558.00 in chips)
+Seat 3: MidRange (4779.00 in chips)
+Seat 4: WideOpen (12500.00 in chips)
+Seat 5: ButtonAce (6913.00 in chips)
+Seat 6: ShortStack (6500.00 in chips)
+HeroPlayer: posts the ante 31
+DrRiver: posts the ante 31
+MidRange: posts the ante 31
+WideOpen: posts the ante 31
+ButtonAce: posts the ante 31
+ShortStack: posts the ante 31
+WideOpen: posts small blind 125
+ButtonAce: posts big blind 250
+*** HOLE CARDS ***
+Dealt to HeroPlayer [4s 9c]
+ShortStack: raises 250.00 to 500.00
+HeroPlayer: folds
+DrRiver: folds
+MidRange: calls 500.00
+WideOpen: folds
+ButtonAce: folds
+*** FLOP *** [7c 7s Qc]
+ShortStack: bets 390.25
+MidRange: calls 390.25
+*** TURN *** [7c 7s Qc] [9d]
+ShortStack: checks
+MidRange: bets 780.00
+ShortStack: calls 780.00
+*** RIVER *** [7c 7s Qc 9d] [Ts]
+ShortStack: checks
+MidRange: bets 3077.75 and is all-in
+ShortStack: folds
+Uncalled bet (3077.75) returned to MidRange
+MidRange collected 3901.50 from pot
+*** SUMMARY ***
+Total pot 3901.50 | Rake 0.00
+Board [7c 7s Qc 9d Ts]
+Seat 1: HeroPlayer folded before Flop (didn't bet)
+Seat 2: DrRiver folded before Flop (didn't bet)
+Seat 3: MidRange (button) collected (3901.50)
+Seat 4: WideOpen (small blind) folded before Flop
+Seat 5: ButtonAce (big blind) folded before Flop
+Seat 6: ShortStack folded on the River

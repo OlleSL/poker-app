@@ -1,60 +1,73 @@
-# 🃏 Olle's Poker App
+# Olle's Poker App
 
-A solo side project built to explore poker theory, hand visualization, and preflop decision analysis with a focus on MTT (Multi-Table Tournament) play.
+Solo side project for exploring poker theory, hand visualization, and preflop decision analysis — focused on **MTT** (multi-table tournament) play.
 
-This repository currently contains the frontend UI for the app, built with React and Vite. Backend services, solver integration, database support, and Docker Compose orchestration are planned for later stages.
+**Live demo (public):** [https://ollesl.github.io/poker-app/](https://ollesl.github.io/poker-app/)
 
----
+Paste or upload hand histories to step through hands on a table UI.
 
-## ✨ What it does today
-
-- Provides a React-based interface for visualizing poker hands
-- Includes core UI components for hand replay and strategy breakdown
-- Uses modern Vite tooling for fast local development
+**Supported today:** Red Dragon / PokerStars-style MTT text — including **CoinPoker** exports that come through Asian Hand Converter as `RedDragon Hand #…` (decimal chip amounts like `530.00` work). Other sites can be added later behind the same UI.
 
 ---
 
-## 🛠 Tech stack
+## What it does today
 
-- Frontend: React + Vite
-- Routing: React Router DOM
-- Language: JavaScript / JSX
-- Build tooling: Vite
-- Linting: ESLint
-
----
-
-## 🚧 Current status
-
-- ✅ Frontend scaffolding and React app structure implemented
-- ✅ React + Vite app boots successfully from the repository root
-- ⏳ Hand replay UI components in progress
-- ⏳ Backend API and database integration not yet added
-- ⏳ Docker and Compose support not included in this repo yet
+- React UI for loading and replaying poker hands
+- Upload a `.txt` hand-history file or paste text from the clipboard
+- Table visualization with street-by-street action playback
+- Optional GTO / strategy panel hooks for further analysis
 
 ---
 
-## 🚀 Getting started
+## Try it without your own hand histories
+
+Most people won’t have Red Dragon `.txt` files handy. Use the included sample:
+
+- In the repo: [`public/samples/red-dragon-mtt-sample.txt`](public/samples/red-dragon-mtt-sample.txt)
+- From the live site: [download sample](https://ollesl.github.io/poker-app/samples/red-dragon-mtt-sample.txt)
+
+Then open the app → **Upload hand history** → select that file (or paste its contents).
+
+The sample mirrors real CoinPoker → Red Dragon export formatting (decimals, antes, 6-max MTT). Player names are fictional.
+
+---
+
+## Tech stack
+
+- React + Vite
+- React Router DOM
+- JavaScript / JSX
+- ESLint
+
+---
+
+## Getting started (local)
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open the local Vite URL shown in the terminal to view the app.
+Open the local Vite URL shown in the terminal (default `http://127.0.0.1:5173/poker-app/`).
+
+```bash
+npm run build    # production build
+npm run preview  # preview the production build
+```
 
 ---
 
-## 📁 Repository structure
+## Repository structure
 
-- `src/` — frontend application code
-- `public/` — static assets
-- `package.json` — project dependencies and scripts
-- `vite.config.js` — Vite configuration
-- `ui/` — additional frontend folder (not required to start the current root app)
+- `src/` — application code (UI, parser, workers)
+- `public/` — static assets and sample hand histories
+- `public/samples/` — demo Red Dragon–style `.txt` files
+- `.github/workflows/` — GitHub Pages deploy workflow
 
 ---
 
-## 📌 Notes
+## Notes
 
-This repository currently exposes the React/Vite frontend from the root. If you add backend or database support later, you can create a top-level `backend/` folder alongside the current root app.
+- One parser covers **RedDragon** and **PokerStars-like** tournament text; CoinPoker files with decimal stacks/bets are supported.
+- Native parsers for other rooms (GG, Party, etc.) are not implemented yet.
+- Backend, database, Docker, and deeper solver integration are not in this repo yet.
