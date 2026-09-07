@@ -929,22 +929,18 @@ export default function PokerTable() {
               <div className="uploader-title">Drop hand history</div>
               <div className="uploader-sub">Drag a .txt or .log file here</div>
             </button>
+          </div>
 
-            {/* Built-in demo sample */}
+          <div className="uploader-hint">
+            <span>Supported: Red Dragon / PokerStars-style text (.txt, .log).</span>
+            <span className="uploader-hint-sep" aria-hidden="true">·</span>
             <button
               type="button"
-              className="uploader-card"
+              className="uploader-hint-link"
               onClick={() => loadSampleHands("red-dragon-mtt-sample.txt")}
-              title="Load sample hands"
-              aria-label="Load sample hands"
             >
-              <div className="uploader-title">Try sample hands</div>
-              <div className="uploader-sub">Load demo Red Dragon MTT hands</div>
+              Try demo hands
             </button>
-          </div> 
-
-          <div style={{ width: "var(--table-w)", maxWidth: "min(90vw, var(--table-w))", margin: "1px auto 0", fontSize: 12, color: "#ddd", textAlign: "center" }}>
-            Supported: Red Dragon / PokerStars-style text (.txt, .log). No file? Use Try sample hands.
           </div>
 
           {/* collapsible paste panel */}

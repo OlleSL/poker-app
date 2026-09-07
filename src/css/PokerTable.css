@@ -619,6 +619,46 @@ textarea {
   opacity: 0.9;
 }
 
+.uploader-hint {
+  width: var(--table-w);
+  max-width: min(90vw, var(--table-w));
+  margin: 8px auto 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 6px 8px;
+  font-size: 12px;
+  color: #bbb;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.uploader-hint-sep {
+  opacity: 0.5;
+}
+
+.uploader-hint-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: #e8e8e8;
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.uploader-hint-link:hover {
+  color: #fff;
+}
+
+.uploader-hint-link:active {
+  opacity: 0.85;
+}
+
 /* Keep the paste panel aligned with the table width */
 .paste-panel {
   width: calc(var(--table-w) - var(--paste-trim));
