@@ -7,6 +7,15 @@ export default defineConfig({
   plugins: [react()],
   build: {
     sourcemap: false, // Disable source maps to prevent 404s for source files
+    chunkSizeWarningLimit: 900,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "playing-cards": ["@heruka_urgyen/react-playing-cards/lib/TcN"],
+          pokersolver: ["pokersolver"],
+        },
+      },
+    },
   },
   server: {
     host: '127.0.0.1',  // bind IPv4 loopback (avoids IPv6/alias weirdness)

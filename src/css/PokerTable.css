@@ -90,33 +90,40 @@ body {
 
 .cards {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   justify-content: center;
   margin: -6px;
+  min-height: 58px;
+  align-items: flex-end;
 }
 
-.card {
-  width: 50px;
-  height: 60px;
-  border: 1px solid #fff;
+.poker-svg-card {
+  line-height: 0;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
+}
+
+.poker-svg-card--deal {
+  animation: cardDealIn 0.28s ease-out both;
+}
+
+.poker-svg-card.is-board {
+  animation-duration: 0.34s;
+}
+
+.poker-svg-card svg {
+  display: block;
   border-radius: 4px;
-  background: white;
-  color: black;
-  font-weight: bold;
-  font-size: 30px;
-  text-align: center;
-  line-height: 52px;
 }
 
-.card.back {
-  background: repeating-linear-gradient(
-    45deg,
-    #ccc,
-    #ccc 5px,
-    #aaa 5px,
-    #aaa 10px
-  );
-  color: transparent;
+@keyframes cardDealIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .community {
@@ -125,7 +132,29 @@ body {
   left: 50%;
   transform: translate(-50%, -50%);
   display: flex;
-  gap: 10px;
+  gap: 8px;
+  align-items: center;
+}
+
+.hand-strength-label {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 48px);
+  transform: translateX(-50%);
+  background: rgba(12, 12, 12, 0.82);
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #f0e6c8;
+  white-space: nowrap;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.chip-tag {
+  transition: transform 0.15s ease, opacity 0.15s ease;
 }
 
 .pot {
@@ -424,11 +453,13 @@ textarea {
     padding: 10px;
   }
 
-  .card {
-    width: 26px;
-    height: 36px;
-    font-size: 14px;
-    line-height: 36px;
+  .poker-svg-card {
+    height: 42px !important;
+  }
+
+  .poker-svg-card svg {
+    height: 42px !important;
+    width: auto !important;
   }
 
   .step-button {

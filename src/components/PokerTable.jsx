@@ -10,6 +10,8 @@ import avatar from "../assets/avatar.png";
 import { parseRedDragonHands } from "../utils/parser"; // optional fallback (not used if worker is available)
 import { GtoPanel } from "../components/GtoPanel";
 import HandSessionPanel from "../components/HandSessionPanel";
+import PokerCard from "../components/PokerCard";
+import { describeHoldEmHand } from "../utils/handStrength";
 
 // Web worker for parsing (Vite syntax with ?worker query)
 import ParserWorker from "../workers/parser.worker.js?worker";
@@ -17,7 +19,6 @@ import HandRanks from "../components/HandRanks";
 
 /* ───────────────────── Helpers & constants ───────────────────── */
 
-const suitSymbols = { h: "♥", d: "♦", s: "♠", c: "♣" };
 const stages = ["preflop", "flop", "turn", "river", "showdown"];
 
 const seatLayoutMap = {
@@ -29,16 +30,14 @@ const seatLayoutMap = {
   7: [4, 3, 2, 1, 0, 6, 5],
 };
 
-function renderCard(card) {
-  if (card === "??") return <div className="card back">??</div>;
-  const value = card.slice(0, -1);
-  const suit = card.slice(-1);
-  const isRed = suit === "h" || suit === "d";
+function renderCard(card, opts = {}) {
   return (
-    <div className="card" style={{ color: isRed ? "red" : "black" }}>
-      {value}
-      {suitSymbols[suit]}
-    </div>
+    <PokerCard
+      card={card}
+      height={opts.height || 58}
+      faceDown={opts.faceDown}
+      className={opts.className}
+    />
   );
 }
 
@@ -1072,9 +1071,9 @@ export default function PokerTable() {
                             <React.Fragment key={i}>{renderCard(card)}</React.Fragment>
                           ))
                         : [0, 1].map((_, i) => (
-                            <div className="card back" key={i}>
-                              🂠
-                            </div>
+                            <React.Fragment key={i}>
+                              {renderCard("??", { faceDown: true })}
+                            </React.Fragment>
                           ))}
                     </div>
                     <div className="player-info">
@@ -1144,9 +1143,29 @@ export default function PokerTable() {
 
             <div className="community">
               {visibleBoard.map((card, i) => (
-                <React.Fragment key={i}>{renderCard(card)}</React.Fragment>
+                <React.Fragment key={`${card}-${i}`}>
+                  {renderCard(card, { height: 64, className: "is-board" })}
+                </React.Fragment>
               ))}
             </div>
+
+            {parsedHand?.hero &&
+              visibleBoard.length >= 3 &&
+              (currentStage === "showdown" ||
+                awardPhase === "show" ||
+                awardPhase === "applied") &&
+              (() => {
+                const strength = describeHoldEmHand(
+                  parsedHand.heroCards || [],
+                  visibleBoard
+                );
+                if (!strength) return null;
+                return (
+                  <div className="hand-strength-label" aria-live="polite">
+                    Hero: {strength.descr}
+                  </div>
+                );
+              })()}
 
             {parsedHand && (
               <div

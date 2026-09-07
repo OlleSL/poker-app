@@ -69,6 +69,7 @@ npm run preview  # preview the production build
 ## Notes
 
 - One parser covers **RedDragon** and **PokerStars-like** tournament text; CoinPoker files with decimal stacks/bets are supported.
+- Cards render with public SVG faces ([`@heruka_urgyen/react-playing-cards`](https://www.npmjs.com/package/@heruka_urgyen/react-playing-cards), Adrian Kennard / CC0). Showdown uses [`pokersolver`](https://www.npmjs.com/package/pokersolver) for hand strength labels.
 - **PKO/KO**: detects 3-part buy-ins (`$prize+$bounty+$fee`) and PokerStars bounty lines (`wins $X for eliminating …`). Replay shows KO cash on the award step when present.
 - Native parsers for other rooms (GG, Party, etc.) and non-Stars bounty wording are not implemented yet — paste a sample if you want those added.
 - Backend, database, Docker, and deeper solver integration are not in this repo yet.
