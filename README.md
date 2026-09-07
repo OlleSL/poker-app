@@ -6,7 +6,7 @@ Solo side project for exploring poker theory, hand visualization, and preflop de
 
 Paste or upload hand histories to step through hands on a table UI.
 
-**Supported today:** Red Dragon / PokerStars-style MTT text — including **CoinPoker** exports that come through Asian Hand Converter as `RedDragon Hand #…` (decimal chip amounts like `530.00` work). Other sites can be added later behind the same UI.
+**Supported today:** Red Dragon / PokerStars-style MTT text — including **CoinPoker** exports that come through Asian Hand Converter as `RedDragon Hand #…` (decimal chip amounts like `530.00` work), plus **PokerStars PKO/KO** bounty lines (`wins $X for eliminating …`). Other sites can be added later behind the same UI.
 
 ---
 
@@ -21,14 +21,14 @@ Paste or upload hand histories to step through hands on a table UI.
 
 ## Try it without your own hand histories
 
-Most people won’t have Red Dragon `.txt` files handy. Use the included sample:
+Most people won’t have Red Dragon `.txt` files handy. Use the included samples:
 
-- In the repo: [`public/samples/red-dragon-mtt-sample.txt`](public/samples/red-dragon-mtt-sample.txt)
-- From the live site: [download sample](https://ollesl.github.io/poker-app/samples/red-dragon-mtt-sample.txt)
+- Red Dragon / CoinPoker-style MTT: [`public/samples/red-dragon-mtt-sample.txt`](public/samples/red-dragon-mtt-sample.txt) · [download](https://ollesl.github.io/poker-app/samples/red-dragon-mtt-sample.txt)
+- PokerStars Progressive KO (PKO): [`public/samples/pokerstars-pko-sample.txt`](public/samples/pokerstars-pko-sample.txt) · [download](https://ollesl.github.io/poker-app/samples/pokerstars-pko-sample.txt)
 
 Then open the app → **Upload hand history** → select that file (or paste its contents).
 
-The sample mirrors real CoinPoker → Red Dragon export formatting (decimals, antes, 6-max MTT). Player names are fictional.
+The Red Dragon sample mirrors CoinPoker → converter formatting (decimals, antes, 6-max MTT). The PKO sample is a public PokerStars-format knockout hand (bounty award + finish place).
 
 ---
 
@@ -69,5 +69,6 @@ npm run preview  # preview the production build
 ## Notes
 
 - One parser covers **RedDragon** and **PokerStars-like** tournament text; CoinPoker files with decimal stacks/bets are supported.
-- Native parsers for other rooms (GG, Party, etc.) are not implemented yet.
+- **PKO/KO**: detects 3-part buy-ins (`$prize+$bounty+$fee`) and PokerStars bounty lines (`wins $X for eliminating …`). Replay shows KO cash on the award step when present.
+- Native parsers for other rooms (GG, Party, etc.) and non-Stars bounty wording are not implemented yet — paste a sample if you want those added.
 - Backend, database, Docker, and deeper solver integration are not in this repo yet.

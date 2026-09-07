@@ -46,6 +46,11 @@ function parseSingleHand(rawText) {
     winners: [],
     playerInvestments: {},
     site: detectSite(rawText),
+    isBounty: false,
+    bountyFormat: null, // "pko" | "ko" | null
+    buyIn: null,
+    bounties: [], // { hunter, eliminated, cashAmount, bountyIncrease, hunterBountyAfter }
+    eliminations: [], // { player, place }
   };
 
   const btnLine = lines.find(
@@ -69,6 +74,35 @@ function parseSingleHand(rawText) {
     if (blindMatch) {
       hand.smallBlind = parseAmount(blindMatch[1]);
       hand.bigBlind = parseAmount(blindMatch[2]);
+    }
+
+    // PKO buy-in is often three parts: prize+bounty+fee → $2.00+$2.00+$0.40
+    const tripleBuyIn = headerLine.match(
+      /\$?([\d.]+)\s*\+\s*\$?([\d.]+)\s*\+\s*\$?([\d.]+)/
+    );
+    const doubleBuyIn = headerLine.match(/\$?([\d.]+)\s*\+\s*\$?([\d.]+)(?!\s*\+)/);
+    if (tripleBuyIn) {
+      hand.buyIn = {
+        prizePool: parseAmount(tripleBuyIn[1]),
+        bounty: parseAmount(tripleBuyIn[2]),
+        fee: parseAmount(tripleBuyIn[3]),
+      };
+      hand.isBounty = true;
+      hand.bountyFormat = "pko";
+    } else if (doubleBuyIn) {
+      hand.buyIn = {
+        prizePool: parseAmount(doubleBuyIn[1]),
+        fee: parseAmount(doubleBuyIn[2]),
+        bounty: null,
+      };
+    }
+
+    if (/progressive\s+knockout|\bPKO\b/i.test(headerLine)) {
+      hand.isBounty = true;
+      hand.bountyFormat = "pko";
+    } else if (/\bknockout\b|\bKO\b|\bbounty\b/i.test(headerLine)) {
+      hand.isBounty = true;
+      hand.bountyFormat = hand.bountyFormat || "ko";
     }
   }
 
@@ -195,6 +229,45 @@ function parseSingleHand(rawText) {
         if (match) {
           pushWinner(hand, match[1], parseAmount(match[2]));
         }
+      }
+    }
+
+    // PokerStars PKO/KO bounty award, e.g.:
+    // "nossoff wins $1 for eliminating Hero and their own bounty increases by $1 to $6"
+    if (/\bwins\b.+\bfor eliminating\b/i.test(line)) {
+      const bountyMatch = line.match(
+        /^(.+?)\s+wins\s+\$?([\d,]+(?:\.\d+)?)\s+for eliminating\s+(.+?)(?:\s+and their own bounty increases by\s+\$?([\d,]+(?:\.\d+)?)\s+to\s+\$?([\d,]+(?:\.\d+)?))?$/i
+      );
+      if (bountyMatch) {
+        hand.isBounty = true;
+        const cashAmount = parseAmount(bountyMatch[2]);
+        const bountyIncrease = bountyMatch[4]
+          ? parseAmount(bountyMatch[4])
+          : null;
+        if (bountyIncrease != null) hand.bountyFormat = "pko";
+        else hand.bountyFormat = hand.bountyFormat || "ko";
+
+        hand.bounties.push({
+          hunter: bountyMatch[1].trim(),
+          eliminated: bountyMatch[3].trim(),
+          cashAmount,
+          bountyIncrease,
+          hunterBountyAfter: bountyMatch[5]
+            ? parseAmount(bountyMatch[5])
+            : null,
+        });
+      }
+    }
+
+    if (/\bfinished the tournament in\b/i.test(line)) {
+      const finishMatch = line.match(
+        /^(.+?)\s+finished the tournament in\s+(\d+)/i
+      );
+      if (finishMatch) {
+        hand.eliminations.push({
+          player: finishMatch[1].trim(),
+          place: parseInt(finishMatch[2], 10),
+        });
       }
     }
 

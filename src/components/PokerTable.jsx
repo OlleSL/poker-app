@@ -818,10 +818,20 @@ export default function PokerTable() {
   const getPotDisplay = () => {
     if (awardPhase === "show" && winnersAtShowdown.length > 0) {
       const winner = winnersAtShowdown[0];
-      const winnerAmount = parsedHand?.bigBlind 
+      const winnerAmount = parsedHand?.bigBlind
         ? (winner.amount / parsedHand.bigBlind).toFixed(2) + " BB"
         : winner.amount;
-      return `${winner.player} won ${winnerAmount}`;
+      let label = `${winner.player} won ${winnerAmount}`;
+      const bounties = parsedHand?.bounties || [];
+      if (bounties.length > 0) {
+        const koBits = bounties.map((b) => {
+          const cash =
+            b.cashAmount != null ? `$${b.cashAmount}` : "bounty";
+          return `KO ${b.eliminated} (${cash})`;
+        });
+        label += ` · ${koBits.join(", ")}`;
+      }
+      return label;
     }
     if (awardPhase === "applied") {
       return ""; // No pot display after chips have been awarded
