@@ -297,6 +297,28 @@ export default function PokerTable() {
     reader.readAsText(file);
   }
 
+  async function loadSampleHands(sampleFile = "red-dragon-mtt-sample.txt") {
+    const base = import.meta.env.BASE_URL || "/";
+    const url = `${base}samples/${sampleFile}`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const text = await res.text();
+      const normalized = text.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
+      if (!normalized.trim()) {
+        alert("Sample file was empty.");
+        return;
+      }
+      handlePaste(normalized);
+      setShowPaste(false);
+    } catch (err) {
+      console.error("Failed to load sample:", err);
+      alert(`Could not load sample hands from ${url}`);
+    }
+  }
+
 
   /* Precompute snapshots for all (stage, idx) once per hand */
   const snapshotTable = useMemo(() => {
@@ -907,10 +929,22 @@ export default function PokerTable() {
               <div className="uploader-title">Drop hand history</div>
               <div className="uploader-sub">Drag a .txt or .log file here</div>
             </button>
+
+            {/* Built-in demo sample */}
+            <button
+              type="button"
+              className="uploader-card"
+              onClick={() => loadSampleHands("red-dragon-mtt-sample.txt")}
+              title="Load sample hands"
+              aria-label="Load sample hands"
+            >
+              <div className="uploader-title">Try sample hands</div>
+              <div className="uploader-sub">Load demo Red Dragon MTT hands</div>
+            </button>
           </div> 
 
           <div style={{ width: "var(--table-w)", maxWidth: "min(90vw, var(--table-w))", margin: "1px auto 0", fontSize: 12, color: "#ddd", textAlign: "center" }}>
-            Supported: Red Dragon / text exports (.txt, .log). We'll auto-detect line endings and BOM.
+            Supported: Red Dragon / PokerStars-style text (.txt, .log). No file? Use Try sample hands.
           </div>
 
           {/* collapsible paste panel */}
