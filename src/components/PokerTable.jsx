@@ -178,9 +178,34 @@ export default function PokerTable() {
   const [stackPayouts, setStackPayouts] = useState({}); // { [player]: amount }
   const [editingHandNumber, setEditingHandNumber] = useState(false);
   const [handNumberInput, setHandNumberInput] = useState("");
+  const [amountUnit, setAmountUnit] = useState(() => {
+    try {
+      const saved = localStorage.getItem("poker-app-amount-unit");
+      return saved === "chips" || saved === "bb" ? saved : "bb";
+    } catch {
+      return "bb";
+    }
+  });
 
   const parsedHand = hands[currentHandIndex] || null;
   const dynamicPlayers = Object.values(parsedHand?.players || {});
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("poker-app-amount-unit", amountUnit);
+    } catch {
+      /* ignore */
+    }
+  }, [amountUnit]);
+
+  function formatAmount(chips) {
+    if (chips == null || Number.isNaN(Number(chips))) return "—";
+    const n = Number(chips);
+    if (amountUnit === "chips" || !parsedHand?.bigBlind) {
+      return Number.isInteger(n) ? String(n) : n.toFixed(2);
+    }
+    return `${(n / parsedHand.bigBlind).toFixed(2)} BB`;
+  }
 
   /* Web Worker setup for parsing */
   const workerRef = useRef(null);
@@ -581,17 +606,13 @@ export default function PokerTable() {
 
 
   function remainingChipsLabel(player) {
-    const bb = parsedHand?.bigBlind || 1;
     const posted = initialPosts[player.name] || 0;
     const antePaid =
       parsedHand?.antes?.find((a) => a.player === player.name)?.amount || 0;
     const invested = snapshot.investedByPlayer[player.name] || 0;
     let remaining = player.stack - posted - antePaid - invested;
     if (awardPhase === "applied") remaining += stackPayouts[player.name] || 0;
-    const chipsLeft = Math.max(0, remaining);
-    return parsedHand?.bigBlind
-      ? (chipsLeft / bb).toFixed(2) + " BB"
-      : chipsLeft + " chips";
+    return formatAmount(Math.max(0, remaining));
   }
 
   /* navigation / step handlers */
@@ -832,18 +853,13 @@ export default function PokerTable() {
 
   /* ─────────── Render ─────────── */
 
-  const potLabel = parsedHand?.bigBlind
-    ? (snapshot.pot / parsedHand.bigBlind).toFixed(2) + " BB"
-    : snapshot.pot;
+  const potLabel = formatAmount(snapshot.pot);
 
   // Show winner information in pot display when there's a showdown
   const getPotDisplay = () => {
     if (awardPhase === "show" && winnersAtShowdown.length > 0) {
       const winner = winnersAtShowdown[0];
-      const winnerAmount = parsedHand?.bigBlind
-        ? (winner.amount / parsedHand.bigBlind).toFixed(2) + " BB"
-        : winner.amount;
-      let label = `${winner.player} won ${winnerAmount}`;
+      let label = `${winner.player} won ${formatAmount(winner.amount)}`;
       const bounties = parsedHand?.bounties || [];
       if (bounties.length > 0) {
         const koBits = bounties.map((b) => {
@@ -863,10 +879,7 @@ export default function PokerTable() {
 
   function calculateAnteLabel() {
     if (!parsedHand) return "0";
-    const ante = parsedHand.anteTotal || 0;
-    return parsedHand.bigBlind
-      ? (ante / parsedHand.bigBlind).toFixed(2) + " BB"
-      : String(ante);
+    return formatAmount(parsedHand.anteTotal || 0);
   }
 
   const displayBets = awardPhase === "none" ? snapshot.visibleBets : visibleBets;
@@ -1020,7 +1033,7 @@ export default function PokerTable() {
                   className={`chip-tag chip-tag-${player.visualSeat}`}
                   key={`bet-${player.name}`}
                 >
-                  {(betAmount / (parsedHand?.bigBlind || 1)).toFixed(2)} BB
+                  {formatAmount(betAmount)}
                 </div>
               );
             })}
@@ -1068,10 +1081,10 @@ export default function PokerTable() {
                     <p>
                       <strong>{current?.player}</strong>:{" "}
                       {current?.action === "raises"
-                        ? `raises to ${(current.amount / parsedHand.bigBlind).toFixed(2)} BB`
+                        ? `raises to ${formatAmount(current.amount)}`
                         : `${current?.action}${
                             current?.amount
-                              ? ` ${(current.amount / parsedHand.bigBlind).toFixed(2)} BB`
+                              ? ` ${formatAmount(current.amount)}`
                               : ""
                           }`}
                     </p>
@@ -1111,6 +1124,24 @@ export default function PokerTable() {
             >
               📊 GTO
             </button>
+            <div className="unit-toggle" role="group" aria-label="Amount unit">
+              <button
+                type="button"
+                className={`unit-toggle-btn${amountUnit === "bb" ? " is-active" : ""}`}
+                onClick={() => setAmountUnit("bb")}
+                title="Show amounts in big blinds"
+              >
+                BB
+              </button>
+              <button
+                type="button"
+                className={`unit-toggle-btn${amountUnit === "chips" ? " is-active" : ""}`}
+                onClick={() => setAmountUnit("chips")}
+                title="Show amounts in chips"
+              >
+                Chips
+              </button>
+            </div>
           </div>
 
           <div className="hand-controls">
